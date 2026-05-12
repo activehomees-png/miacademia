@@ -6,61 +6,70 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
 <style>
-  .fc { color: #e2e8f0; font-size: 13px; }
-  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: #252525; }
-  .fc-col-header-cell { background: #141414; }
-  .fc-daygrid-day { background: #191919; }
-  .fc-daygrid-day:hover { background: #1e1e1e; }
-  .fc-day-today { background: #1e1b4b !important; }
-  .fc-button-primary { background: #6366f1 !important; border-color: #4f46e5 !important; }
-  .fc-button-primary:hover { background: #4f46e5 !important; }
-  .fc-button-active { background: #4338ca !important; }
-  .fc-toolbar-title { color: #fff; font-size: 16px !important; }
-  .fc-event { cursor: pointer; }
+  .fc { font-size: 13px; }
+  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: #e4e4e7; }
+  .fc-col-header-cell { background: #f4f4f5; font-weight: 600; color: #52525b; }
+  .fc-daygrid-day { background: #fff; }
+  .fc-daygrid-day:hover { background: #fafafa; }
+  .fc-day-today { background: #f5f3ff !important; }
+  .fc-button-primary { background: #7c3aed !important; border-color: #6d28d9 !important; font-weight: 600 !important; }
+  .fc-button-primary:hover { background: #6d28d9 !important; }
+  .fc-button-active { background: #5b21b6 !important; border-color: #5b21b6 !important; }
+  .fc-toolbar-title { color: #18181b; font-size: 16px !important; font-weight: 700 !important; }
+  .fc-event { cursor: pointer; font-size: 12px; }
+  .fc-daygrid-event { border-radius: 4px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <div>
-    <h1 class="text-xl font-bold text-white">📅 Clases en directo</h1>
-    <p class="text-sm text-[#6b7280] mt-0.5">Clases grupales programadas</p>
+    <h1 class="text-xl font-bold text-[#18181b]">📅 Clases en directo</h1>
+    <p class="text-sm text-[#71717a] mt-0.5">Clases grupales programadas</p>
   </div>
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('admin_new_live_class') }}" class="btn btn-primary">➕ Nueva clase</a>
+  {% endif %}
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
   <!-- Calendario -->
-  <div class="lg:col-span-2 card p-4">
+  <div class="lg:col-span-2 bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
     <div id="calendar"></div>
   </div>
 
   <!-- Próximas clases -->
-  <div class="space-y-4">
-    <div class="card p-4">
-      <h2 class="text-sm font-semibold text-white mb-3">🔜 Próximas clases</h2>
+  <div class="space-y-3">
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
+      <h2 class="text-sm font-bold text-[#18181b] mb-3">🔜 Próximas clases</h2>
       {% if upcoming %}
       <div class="space-y-3">
         {% for lc in upcoming %}
-        <div class="bg-[#141414] border border-[#252525] rounded-xl p-3">
-          <p class="font-semibold text-white text-sm">{{ lc.title }}</p>
-          <p class="text-xs text-indigo-400 mt-0.5">
-            📅 {{ lc.scheduled_at.strftime('%d %b %Y · %H:%M') }}
+        <div class="bg-[#f5f3ff] border border-violet-100 rounded-xl p-3">
+          <p class="font-semibold text-[#18181b] text-sm">{{ lc.title }}</p>
+          <p class="text-xs text-violet-600 font-medium mt-0.5">
+            📅 {{ lc.scheduled_at.strftime('%d %b · %H:%M') }}
           </p>
           {% if lc.instructor %}
-          <p class="text-xs text-[#6b7280] mt-0.5">👤 {{ lc.instructor }}</p>
+          <p class="text-xs text-[#71717a] mt-0.5">👤 {{ lc.instructor }}</p>
           {% endif %}
           {% if lc.duration_min %}
-          <p class="text-xs text-[#4b5563]">⏱ {{ lc.duration_min }} min</p>
+          <p class="text-xs text-[#a1a1aa]">⏱ {{ lc.duration_min }} min</p>
           {% endif %}
           {% if lc.description %}
-          <p class="text-xs text-[#6b7280] mt-1 leading-relaxed">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
+          <p class="text-xs text-[#71717a] mt-1 leading-relaxed">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
           {% endif %}
           {% if lc.meet_url %}
-          <a href="{{ lc.meet_url }}" target="_blank"
-             class="btn btn-primary btn-sm mt-2 inline-flex">
+          <a href="{{ lc.meet_url }}" target="_blank" class="btn btn-primary btn-sm mt-2 inline-flex">
             🎥 Unirse
           </a>
+          {% endif %}
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('admin_delete_live_class', class_id=lc.id) }}"
+                onsubmit="return confirm('¿Eliminar esta clase?')" class="mt-1">
+            <button type="submit" class="text-[10px] text-red-400 hover:text-red-600">Eliminar</button>
+          </form>
           {% endif %}
         </div>
         {% endfor %}
@@ -68,7 +77,10 @@
       {% else %}
       <div class="text-center py-6">
         <p class="text-3xl mb-2">📅</p>
-        <p class="text-sm text-[#4b5563]">No hay clases programadas próximamente.</p>
+        <p class="text-sm text-[#a1a1aa]">No hay clases próximas.</p>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_new_live_class') }}" class="btn btn-primary btn-sm mt-3 inline-flex">Programar clase</a>
+        {% endif %}
       </div>
       {% endif %}
     </div>
@@ -76,17 +88,16 @@
 
 </div>
 
-<!-- Modal detalle clase -->
-<div id="modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
-  <div class="bg-[#191919] border border-[#2a2a2a] rounded-2xl p-6 max-w-sm w-full mx-4" onclick="event.stopPropagation()">
-    <h2 id="modal-title" class="text-lg font-bold text-white mb-1"></h2>
-    <p id="modal-time"  class="text-sm text-indigo-400 mb-3"></p>
-    <p id="modal-instructor" class="text-sm text-[#6b7280] mb-1 hidden"></p>
-    <p id="modal-duration"   class="text-sm text-[#6b7280] mb-3 hidden"></p>
-    <p id="modal-desc"       class="text-sm text-[#9ca3af] mb-4 leading-relaxed hidden"></p>
+<!-- Modal detalle -->
+<div id="modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
+  <div class="bg-white border border-[#e4e4e7] rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onclick="event.stopPropagation()">
+    <h2 id="modal-title" class="text-lg font-bold text-[#18181b] mb-1"></h2>
+    <p id="modal-time" class="text-sm text-violet-600 font-medium mb-3"></p>
+    <p id="modal-instructor" class="text-sm text-[#71717a] mb-1 hidden"></p>
+    <p id="modal-duration"   class="text-sm text-[#71717a] mb-3 hidden"></p>
+    <p id="modal-desc"       class="text-sm text-[#52525b] mb-4 leading-relaxed hidden"></p>
     <div class="flex gap-2">
-      <a id="modal-link" href="#" target="_blank"
-         class="btn btn-primary hidden">🎥 Unirse a la clase</a>
+      <a id="modal-link" href="#" target="_blank" class="btn btn-primary hidden">🎥 Unirse</a>
       <button onclick="document.getElementById('modal').classList.add('hidden')"
               class="btn btn-secondary">Cerrar</button>
     </div>
@@ -103,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     eventClick(info) {
       const p = info.event.extendedProps;
       document.getElementById('modal-title').textContent = info.event.title;
-      document.getElementById('modal-time').textContent  =
+      document.getElementById('modal-time').textContent =
         '📅 ' + info.event.start.toLocaleString('es-ES', {dateStyle:'medium', timeStyle:'short'});
 
       const instEl = document.getElementById('modal-instructor');

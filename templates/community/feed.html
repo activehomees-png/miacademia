@@ -7,87 +7,82 @@
   <!-- FEED -->
   <div class="flex-1 min-w-0">
     <div class="flex items-center justify-between mb-5">
-      <h1 class="text-xl font-bold text-white">Comunidad</h1>
-      <a href="{{ url_for('new_post') }}" class="btn btn-primary">
-        ✏️ Nuevo post
-      </a>
+      <h1 class="text-xl font-bold text-[#18181b]">Comunidad</h1>
+      <a href="{{ url_for('new_post') }}" class="btn btn-primary">✏️ Publicar</a>
     </div>
 
-    <!-- Filtros por categoría -->
+    <!-- Filtros -->
     <div class="flex flex-wrap gap-2 mb-5">
       <a href="{{ url_for('community') }}"
-         class="badge {% if not active_cat %}bg-indigo-900 text-indigo-300{% else %}bg-[#1e1e1e] text-[#6b7280]{% endif %} cursor-pointer hover:opacity-80 transition">
+         class="badge cursor-pointer transition {% if not active_cat %}bg-violet-100 text-violet-700{% else %}bg-white border border-[#e4e4e7] text-[#71717a] hover:bg-[#f4f4f5]{% endif %}">
         Todos
       </a>
       {% for cat in categories %}
       <a href="{{ url_for('community', cat=cat.id) }}"
          class="badge cursor-pointer hover:opacity-80 transition"
-         style="background:{{ cat.color }}22; color:{{ cat.color }}; {% if active_cat==cat.id %}outline:1px solid {{ cat.color }}{% endif %}">
+         style="background:{{ cat.color }}18; color:{{ cat.color }}; {% if active_cat==cat.id %}outline:1.5px solid {{ cat.color }}{% endif %}">
         {{ cat.emoji }} {{ cat.name }}
       </a>
       {% endfor %}
     </div>
 
     <!-- Posts -->
-    <div class="space-y-3">
+    <div class="space-y-2">
       {% for post in posts %}
       <a href="{{ url_for('post_detail', post_id=post.id) }}"
-         class="card p-4 flex gap-4 hover:border-[#333] transition cursor-pointer block">
-        <!-- Avatar -->
-        <div class="w-9 h-9 rounded-full bg-indigo-700 flex items-center justify-center
+         class="bg-white border border-[#e4e4e7] rounded-xl p-4 flex gap-4 hover:border-[#c4c4c7] hover:shadow-sm transition cursor-pointer block">
+        <div class="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center
                     text-white text-sm font-bold flex-shrink-0 mt-0.5">
           {{ post.author.initials }}
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap mb-1">
+            <span class="font-semibold text-[#18181b] text-sm">{{ post.author.username }}</span>
+            <span class="text-[#a1a1aa] text-xs">· {{ post.created_at | timeago }}</span>
             {% if post.pinned %}
-            <span class="text-[10px] bg-amber-900/50 text-amber-400 px-2 py-0.5 rounded-full font-semibold">📌 Fijado</span>
+            <span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-semibold">📌 Fijado</span>
             {% endif %}
             {% if post.category %}
             <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style="background:{{ post.category.color }}22; color:{{ post.category.color }}">
+                  style="background:{{ post.category.color }}18; color:{{ post.category.color }}">
               {{ post.category.emoji }} {{ post.category.name }}
             </span>
             {% endif %}
           </div>
-          <p class="font-semibold text-white text-sm leading-snug truncate">{{ post.title }}</p>
-          <p class="text-[#6b7280] text-xs mt-0.5 line-clamp-2">{{ post.content[:120] }}{% if post.content|length > 120 %}...{% endif %}</p>
-          <div class="flex items-center gap-4 mt-2 text-[11px] text-[#4b5563]">
-            <span>{{ post.author.username }}</span>
-            <span>{{ post.created_at | timeago }}</span>
+          <p class="font-semibold text-[#18181b] text-sm leading-snug">{{ post.title }}</p>
+          <p class="text-[#71717a] text-xs mt-0.5 line-clamp-1">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</p>
+          <div class="flex items-center gap-4 mt-2 text-[11px] text-[#a1a1aa]">
             <span>❤️ {{ post.likes | length }}</span>
-            <span>💬 {{ post.comments | length }}</span>
+            <span>💬 {{ post.comments | length }} comentarios</span>
           </div>
         </div>
       </a>
       {% else %}
-      <div class="card p-10 text-center text-[#4b5563]">
+      <div class="bg-white border border-[#e4e4e7] rounded-xl p-12 text-center">
         <p class="text-3xl mb-2">💬</p>
-        <p class="font-medium text-[#6b7280]">Aún no hay posts en esta categoría.</p>
+        <p class="font-medium text-[#71717a]">Sin posts en esta categoría.</p>
         <a href="{{ url_for('new_post') }}" class="btn btn-primary mt-4 inline-flex">Crea el primero</a>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <!-- SIDEBAR derecho -->
-  <div class="w-64 flex-shrink-0 hidden lg:block space-y-4">
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold text-white mb-3">📂 Categorías</h3>
-      <div class="space-y-1">
+  <!-- Sidebar derecho -->
+  <div class="w-60 flex-shrink-0 hidden lg:block space-y-4">
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4">
+      <h3 class="text-sm font-semibold text-[#18181b] mb-3">📂 Categorías</h3>
+      <div class="space-y-0.5">
         {% for cat in categories %}
         <a href="{{ url_for('community', cat=cat.id) }}"
-           class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#1e1e1e] transition">
-          <span class="text-sm text-[#9ca3af]">{{ cat.emoji }} {{ cat.name }}</span>
-          <span class="text-[11px] text-[#4b5563]">{{ cat.posts | length }}</span>
+           class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#f4f4f5] transition">
+          <span class="text-sm text-[#52525b]">{{ cat.emoji }} {{ cat.name }}</span>
+          <span class="text-[11px] text-[#a1a1aa]">{{ cat.posts | length }}</span>
         </a>
         {% endfor %}
       </div>
     </div>
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold text-white mb-2">🚀 Inicio rápido</h3>
-      <p class="text-xs text-[#6b7280] leading-relaxed">Presenta tu duda, comparte recursos o empieza un debate con la comunidad.</p>
-      <a href="{{ url_for('new_post') }}" class="btn btn-primary w-full justify-center mt-3">✏️ Publicar</a>
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4">
+      <a href="{{ url_for('new_post') }}" class="btn btn-primary w-full justify-center">✏️ Publicar</a>
     </div>
   </div>
 

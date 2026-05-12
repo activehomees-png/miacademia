@@ -3,40 +3,40 @@
 {% block content_class %}max-w-4xl mx-auto{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('admin_courses') }}" class="text-sm text-[#6b7280] hover:text-white mb-4 inline-flex items-center gap-1">← Cursos</a>
-<h1 class="text-xl font-bold text-white mt-3 mb-6">✏️ {{ course.title }}</h1>
+<a href="{{ url_for('admin_courses') }}" class="text-sm text-[#71717a] hover:text-[#18181b] mb-4 inline-flex items-center gap-1">← Cursos</a>
+<h1 class="text-xl font-bold text-[#18181b] mt-3 mb-6">✏️ {{ course.title }}</h1>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-  <!-- Editar info del curso -->
-  <div class="card p-5">
-    <h2 class="text-sm font-semibold text-white mb-4">Información del curso</h2>
+  <!-- Info del curso -->
+  <div class="bg-white border border-[#e4e4e7] rounded-xl p-5 shadow-sm">
+    <h2 class="text-sm font-bold text-[#18181b] mb-4">Información del curso</h2>
     <form method="POST" class="space-y-4">
       <input type="hidden" name="action" value="update"/>
       <div>
-        <label class="block text-xs text-[#6b7280] mb-1">Título</label>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">Título</label>
         <input type="text" name="title" class="input" value="{{ course.title }}" required/>
       </div>
       <div>
-        <label class="block text-xs text-[#6b7280] mb-1">Subtítulo</label>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">Subtítulo</label>
         <input type="text" name="subtitle" class="input" value="{{ course.subtitle }}"/>
       </div>
       <div>
-        <label class="block text-xs text-[#6b7280] mb-1">Descripción</label>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">Descripción</label>
         <textarea name="description" class="input" rows="4">{{ course.description }}</textarea>
       </div>
       <div>
-        <label class="block text-xs text-[#6b7280] mb-1">URL imagen portada</label>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">URL imagen portada</label>
         <input type="url" name="image_url" class="input" value="{{ course.image }}"/>
       </div>
       <div>
-        <label class="block text-xs text-[#6b7280] mb-1">Precio (€)</label>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">Precio (€)</label>
         <input type="number" name="price" class="input" value="{{ course.price }}" min="0" step="0.01"/>
       </div>
       <div class="flex items-center gap-2">
-        <input type="checkbox" name="published" id="pub" class="accent-indigo-500"
+        <input type="checkbox" name="published" id="pub" class="accent-violet-600"
                {% if course.is_published %}checked{% endif %}/>
-        <label for="pub" class="text-sm text-[#9ca3af]">Publicado</label>
+        <label for="pub" class="text-sm text-[#52525b]">Publicado</label>
       </div>
       <button type="submit" class="btn btn-primary w-full justify-center">Guardar cambios</button>
     </form>
@@ -45,47 +45,44 @@
   <!-- Secciones y lecciones -->
   <div class="space-y-4">
     {% for section in course.sections %}
-    <div class="card p-4">
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
       <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-semibold text-white">📁 {{ section.title }}</p>
+        <p class="text-sm font-bold text-[#18181b]">📁 {{ section.title }}</p>
         <form method="POST" action="{{ url_for('admin_delete_section', section_id=section.id) }}"
               onsubmit="return confirm('¿Eliminar sección y sus lecciones?')">
-          <button type="submit" class="text-xs text-[#4b5563] hover:text-red-400">✕</button>
+          <button type="submit" class="text-xs text-[#a1a1aa] hover:text-red-500 transition">✕ Eliminar</button>
         </form>
       </div>
 
-      <!-- Lecciones existentes -->
       <div class="space-y-1 mb-3">
         {% for lesson in section.lessons %}
-        <div class="flex items-center gap-2 py-1.5 px-2 bg-[#141414] rounded-lg">
-          <span class="text-[#4b5563] text-xs">▶</span>
-          <span class="text-xs text-[#9ca3af] flex-1 truncate">{{ lesson.title }}</span>
-          {% if lesson.duration_min %}<span class="text-[10px] text-[#374151]">{{ lesson.duration_min }}m</span>{% endif %}
+        <div class="flex items-center gap-2 py-1.5 px-3 bg-[#fafafa] border border-[#f0f0f0] rounded-lg">
+          <span class="text-violet-400 text-xs">▶</span>
+          <span class="text-xs text-[#52525b] flex-1 truncate">{{ lesson.title }}</span>
+          {% if lesson.duration_min %}<span class="text-[10px] text-[#a1a1aa]">{{ lesson.duration_min }}m</span>{% endif %}
           <form method="POST" action="{{ url_for('admin_delete_lesson', lesson_id=lesson.id) }}">
-            <button type="submit" class="text-[10px] text-[#374151] hover:text-red-400">✕</button>
+            <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-red-500">✕</button>
           </form>
         </div>
         {% endfor %}
       </div>
 
-      <!-- Añadir lección -->
       <details class="text-xs">
-        <summary class="text-indigo-400 cursor-pointer hover:text-indigo-300">+ Añadir lección</summary>
-        <form method="POST" action="{{ url_for('admin_add_lesson', section_id=section.id) }}"
-              class="space-y-2 mt-3">
-          <input type="text"   name="title"       class="input" placeholder="Título de la lección" required/>
-          <input type="url"    name="video_url"   class="input" placeholder="URL YouTube (https://youtu.be/...)"/>
-          <textarea            name="description" class="input" rows="2" placeholder="Descripción (opcional)"></textarea>
-          <input type="number" name="duration"    class="input" placeholder="Duración (minutos)" min="0"/>
-          <button type="submit" class="btn btn-primary btn-sm">Añadir</button>
+        <summary class="text-violet-600 cursor-pointer hover:text-violet-700 font-medium">+ Añadir lección</summary>
+        <form method="POST" action="{{ url_for('admin_add_lesson', section_id=section.id) }}" class="space-y-2 mt-3">
+          <input type="text" name="title"       class="input" placeholder="Título de la lección *" required/>
+          <input type="url"  name="video_url"   class="input" placeholder="URL YouTube (https://youtu.be/...)"/>
+          <textarea          name="description" class="input" rows="2" placeholder="Descripción (opcional)"></textarea>
+          <input type="number" name="duration"  class="input" placeholder="Duración en minutos" min="0"/>
+          <button type="submit" class="btn btn-primary btn-sm">Añadir lección</button>
         </form>
       </details>
     </div>
     {% endfor %}
 
     <!-- Nueva sección -->
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold text-white mb-3">📁 Nueva sección (carpeta)</h3>
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
+      <h3 class="text-sm font-bold text-[#18181b] mb-3">📁 Nueva sección (carpeta)</h3>
       <form method="POST" class="flex gap-2">
         <input type="hidden" name="action" value="add_section"/>
         <input type="text" name="section_title" class="input flex-1" placeholder="Nombre de la sección" required/>
