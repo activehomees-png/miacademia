@@ -154,7 +154,7 @@ class LessonProgress(db.Model):
 
 class SiteSettings(db.Model):
     id                    = db.Column(db.Integer, primary_key=True)
-    academy_name          = db.Column(db.String(100), default='Mi Academia')
+    academy_name          = db.Column(db.String(100), default='Marca Atractora')
     community_image       = db.Column(db.String(500), default='')
     community_image_data  = db.Column(db.LargeBinary, nullable=True)
     community_image_mime  = db.Column(db.String(50), default='image/jpeg')
