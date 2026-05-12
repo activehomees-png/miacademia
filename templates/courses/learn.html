@@ -118,10 +118,15 @@
           <p class="text-xs text-[#a1a1aa] mt-0.5">⏱ {{ current_lesson.duration_min }} minutos</p>
           {% endif %}
         </div>
-        <button onclick="markDone({{ current_lesson.id }})" id="done-btn"
-          class="flex-shrink-0 btn {% if current_lesson.id in completed_ids %}btn-secondary{% else %}btn-primary{% endif %}">
-          {% if current_lesson.id in completed_ids %}✅ Completada{% else %}Marcar completada{% endif %}
-        </button>
+        <div id="done-status" class="flex-shrink-0">
+          {% if current_lesson.id in completed_ids %}
+          <span class="btn btn-secondary">✅ Completada</span>
+          {% else %}
+          <span class="text-xs text-[#a1a1aa] flex items-center gap-1.5">
+            ⏱ <span id="countdown">3:00</span> para completar
+          </span>
+          {% endif %}
+        </div>
       </div>
 
       <!-- Description -->
@@ -214,14 +219,10 @@
 
 <script>
 async function markDone(lessonId, auto) {
-  const btn = document.getElementById('done-btn');
-  if (btn && btn.dataset.done === '1') return;
   await fetch(`/cursos/{{ course.id }}/completar/${lessonId}`, {method:'POST'});
-  if (btn) {
-    btn.textContent = '✅ Completada';
-    btn.classList.remove('btn-primary');
-    btn.classList.add('btn-secondary');
-    btn.dataset.done = '1';
+  const status = document.getElementById('done-status');
+  if (status) {
+    status.innerHTML = '<span class="btn btn-secondary">✅ Completada</span>';
   }
   // Update sidebar check for this lesson
   const sideLink = document.querySelector(`[data-lesson-id="{{ current_lesson.id if current_lesson else '' }}"]`);
@@ -253,17 +254,15 @@ function showToast(msg) {
 }
 
 {% if current_lesson and current_lesson.id not in completed_ids %}
-// Auto-complete after 3 minutes of viewing
 let _elapsed = 0;
 const _timer = setInterval(() => {
   _elapsed += 1;
-  // Update countdown in button
-  const btn = document.getElementById('done-btn');
-  if (btn && btn.dataset.done !== '1') {
-    const remaining = 180 - _elapsed;
-    if (remaining > 0) {
-      btn.textContent = 'Completar (⏱ ' + remaining + 's)';
-    }
+  const remaining = 180 - _elapsed;
+  const cd = document.getElementById('countdown');
+  if (cd) {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    cd.textContent = m + ':' + String(s).padStart(2, '0');
   }
   if (_elapsed >= 180) {
     clearInterval(_timer);
