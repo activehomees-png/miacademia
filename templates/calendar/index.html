@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     locale: 'es',
     headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek' },
     events: '/calendario/data',
+    eventDisplay: 'block',
     eventClick(info) {
       const p = info.event.extendedProps;
       document.getElementById('modal-title').textContent = info.event.title;
