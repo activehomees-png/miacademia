@@ -687,6 +687,36 @@ def admin_new_live_class():
         return redirect(url_for('admin_live_classes'))
     return render_template('admin/new_live_class.html')
 
+@app.route('/admin/clases/<int:class_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_edit_live_class(class_id):
+    lc = LiveClass.query.get_or_404(class_id)
+    if request.method == 'POST':
+        lc.title        = request.form.get('title', '').strip()
+        lc.description  = request.form.get('description', '').strip()
+        lc.meet_url     = request.form.get('meet_url', '').strip()
+        lc.instructor   = request.form.get('instructor', '').strip()
+        lc.duration_min = int(request.form.get('duration', 60) or 60)
+        try:
+            lc.scheduled_at = datetime.fromisoformat(request.form.get('scheduled_at', ''))
+        except Exception:
+            pass
+        update_all = request.form.get('update_all') == '1'
+        if update_all and lc.parent_id is None:
+            children = LiveClass.query.filter_by(parent_id=lc.id).all()
+            for child in children:
+                child.title        = lc.title
+                child.description  = lc.description
+                child.meet_url     = lc.meet_url
+                child.instructor   = lc.instructor
+                child.duration_min = lc.duration_min
+        db.session.commit()
+        flash('Clase actualizada.', 'success')
+        return redirect(url_for('calendar'))
+    scheduled_str = lc.scheduled_at.strftime('%Y-%m-%dT%H:%M')
+    return render_template('admin/edit_live_class.html', lc=lc, scheduled_str=scheduled_str)
+
 @app.route('/admin/clases/<int:class_id>/borrar', methods=['POST'])
 @login_required
 @admin_required

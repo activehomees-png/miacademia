@@ -52,19 +52,19 @@
       {% if upcoming %}
       <div class="space-y-3">
         {% for lc in upcoming %}
-        <div class="bg-[#f5f3ff] border border-violet-100 rounded-xl p-3">
-          <p class="font-semibold text-[#18181b] text-sm">{{ lc.title }}</p>
-          <p class="text-xs text-violet-600 font-medium mt-0.5">
+        <div class="border border-violet-200 rounded-xl p-3" style="background:#f5f3ff">
+          <p class="font-semibold text-sm" style="color:#18181b">{{ lc.title }}</p>
+          <p class="text-xs text-violet-500 font-medium mt-0.5">
             📅 {{ lc.scheduled_at.strftime('%d %b · %H:%M') }}
           </p>
           {% if lc.instructor %}
-          <p class="text-xs text-[#71717a] mt-0.5">👤 {{ lc.instructor }}</p>
+          <p class="text-xs mt-0.5" style="color:var(--text2)">👤 {{ lc.instructor }}</p>
           {% endif %}
           {% if lc.duration_min %}
-          <p class="text-xs text-[#a1a1aa]">⏱ {{ lc.duration_min }} min</p>
+          <p class="text-xs" style="color:var(--text3)">⏱ {{ lc.duration_min }} min</p>
           {% endif %}
           {% if lc.description %}
-          <p class="text-xs text-[#71717a] mt-1 leading-relaxed">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
+          <p class="text-xs mt-1 leading-relaxed" style="color:var(--text2)">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
           {% endif %}
           {% if lc.meet_url %}
           <a href="{{ lc.meet_url }}" target="_blank"
@@ -75,10 +75,14 @@
           <p class="text-[10px] text-[#a1a1aa] mt-1 truncate">{{ lc.meet_url }}</p>
           {% endif %}
           {% if current_user.is_admin %}
-          <form method="POST" action="{{ url_for('admin_delete_live_class', class_id=lc.id) }}"
-                onsubmit="return confirm('¿Eliminar esta clase?')" class="mt-1">
-            <button type="submit" class="text-[10px] text-red-400 hover:text-red-600">Eliminar</button>
-          </form>
+          <div class="flex items-center gap-3 mt-1">
+            <a href="{{ url_for('admin_edit_live_class', class_id=lc.id) }}"
+               class="text-[10px] text-violet-500 hover:text-violet-700">✏️ Editar</a>
+            <form method="POST" action="{{ url_for('admin_delete_live_class', class_id=lc.id) }}"
+                  onsubmit="return confirm('¿Eliminar esta clase?')">
+              <button type="submit" class="text-[10px] text-red-400 hover:text-red-600">Eliminar</button>
+            </form>
+          </div>
           {% endif %}
         </div>
         {% endfor %}

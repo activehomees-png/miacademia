@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Editar clase en directo{% endblock %}
+
+{% block content %}
+<div class="max-w-lg">
+  <a href="{{ url_for('calendar') }}" class="text-sm text-[#71717a] hover:text-[#18181b] mb-4 inline-flex items-center gap-1">← Volver al calendario</a>
+  <h1 class="text-xl font-bold text-[#18181b] mt-3 mb-6">✏️ Editar clase en directo</h1>
+  <div class="bg-white border border-[#e4e4e7] rounded-xl p-6 shadow-sm">
+    <form method="POST" class="space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Título *</label>
+        <input type="text" name="title" class="input" value="{{ lc.title }}" required/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Descripción</label>
+        <textarea name="description" class="input" rows="3">{{ lc.description }}</textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Fecha y hora *</label>
+        <input type="datetime-local" name="scheduled_at" class="input" value="{{ scheduled_str }}" required/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Duración (minutos)</label>
+        <input type="number" name="duration" class="input" value="{{ lc.duration_min }}" min="5"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Instructor</label>
+        <input type="text" name="instructor" class="input" value="{{ lc.instructor }}"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Enlace (Meet, Zoom...)</label>
+        <input type="url" name="meet_url" class="input" value="{{ lc.meet_url }}"/>
+      </div>
+      {% if lc.parent_id is none and lc.recurrence != 'none' %}
+      <div class="flex items-center gap-2 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+        <input type="checkbox" name="update_all" value="1" id="update_all" class="w-4 h-4 accent-violet-600"/>
+        <label for="update_all" class="text-sm text-[#52525b]">Actualizar también todas las repeticiones futuras</label>
+      </div>
+      {% endif %}
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="{{ url_for('calendar') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
