@@ -19,14 +19,16 @@
       {% set total = course.lesson_count %}
       {% set done  = completed_ids | length %}
       {% if total > 0 %}
+      {% set pct = ((done/total)*100)|round|int %}
       <div class="mt-2">
         <div class="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
-          <span>{{ done }} de {{ total }} completadas</span>
-          <span>{{ ((done/total)*100)|round|int }}%</span>
+          <span id="progress-label">{{ done }} de {{ total }} completadas</span>
+          <span id="progress-pct">{{ pct }}%</span>
         </div>
         <div class="h-1.5 bg-[#f4f4f5] rounded-full overflow-hidden">
-          <div class="h-full bg-violet-500 rounded-full transition-all"
-               style="width:{{ ((done/total)*100)|round|int }}%"></div>
+          <div id="progress-bar" class="h-full bg-violet-500 rounded-full transition-all"
+               style="width:{{ pct }}%"
+               data-total="{{ total }}" data-done="{{ done }}"></div>
         </div>
       </div>
       {% endif %}
@@ -211,12 +213,63 @@
 </div>
 
 <script>
-async function markDone(lessonId) {
+async function markDone(lessonId, auto) {
   const btn = document.getElementById('done-btn');
+  if (btn && btn.dataset.done === '1') return;
   await fetch(`/cursos/{{ course.id }}/completar/${lessonId}`, {method:'POST'});
-  btn.textContent = '✅ Completada';
-  btn.classList.remove('btn-primary');
-  btn.classList.add('btn-secondary');
+  if (btn) {
+    btn.textContent = '✅ Completada';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-secondary');
+    btn.dataset.done = '1';
+  }
+  // Update sidebar check for this lesson
+  const sideLink = document.querySelector(`[data-lesson-id="{{ current_lesson.id if current_lesson else '' }}"]`);
+  if (sideLink) {
+    const icon = sideLink.querySelector('.lesson-icon');
+    if (icon) { icon.textContent = '✓'; icon.className = 'lesson-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-green-100 text-green-600'; }
+  }
+  // Update progress bar
+  const bar = document.getElementById('progress-bar');
+  const label = document.getElementById('progress-label');
+  if (bar && label) {
+    const total = parseInt(bar.dataset.total);
+    const done  = parseInt(bar.dataset.done) + 1;
+    bar.dataset.done = done;
+    const pct = Math.round((done / total) * 100);
+    bar.style.width = pct + '%';
+    label.textContent = done + ' de ' + total + ' completadas';
+    document.getElementById('progress-pct').textContent = pct + '%';
+  }
+  if (auto) showToast('✅ Lección marcada como completada');
 }
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg z-50 transition-opacity';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+{% if current_lesson and current_lesson.id not in completed_ids %}
+// Auto-complete after 3 minutes of viewing
+let _elapsed = 0;
+const _timer = setInterval(() => {
+  _elapsed += 1;
+  // Update countdown in button
+  const btn = document.getElementById('done-btn');
+  if (btn && btn.dataset.done !== '1') {
+    const remaining = 180 - _elapsed;
+    if (remaining > 0) {
+      btn.textContent = 'Completar (⏱ ' + remaining + 's)';
+    }
+  }
+  if (_elapsed >= 180) {
+    clearInterval(_timer);
+    markDone({{ current_lesson.id }}, true);
+  }
+}, 1000);
+{% endif %}
 </script>
 {% endblock %}

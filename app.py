@@ -210,8 +210,11 @@ def enroll_free(course_id):
 def learn(course_id):
     course = Course.query.get_or_404(course_id)
     if not current_user.is_enrolled(course_id) and not current_user.is_admin:
-        flash('Necesitas inscribirte para acceder.', 'error')
-        return redirect(url_for('course_detail', course_id=course_id))
+        if course.is_free:
+            db.session.add(Enrollment(user_id=current_user.id, course_id=course_id))
+            db.session.commit()
+        else:
+            return redirect(url_for('course_detail', course_id=course_id))
 
     lesson_id      = request.args.get('leccion', type=int)
     current_lesson = Lesson.query.get(lesson_id) if lesson_id else None
