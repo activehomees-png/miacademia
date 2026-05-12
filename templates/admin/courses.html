@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Gestionar cursos{% endblock %}
+{% block title %}Gestionar formaciones{% endblock %}
 {% block content_class %}max-w-4xl mx-auto{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
-  <h1 class="text-xl font-bold text-[#18181b]">📝 Gestionar cursos</h1>
-  <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary">➕ Nuevo curso</a>
+  <h1 class="text-xl font-bold text-[#18181b]">📝 Gestionar formaciones</h1>
+  <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary">➕ Nueva formación</a>
 </div>
 
 {% if courses %}
