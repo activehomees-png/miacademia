@@ -169,7 +169,7 @@ def new_post():
                         content=content, category_id=category_id)
             db.session.add(post)
             db.session.commit()
-            return redirect(url_for('post_detail', post_id=post.id))
+            return redirect(url_for('community'))
     return render_template('community/new_post.html', categories=categories)
 
 @app.route('/comunidad/post/<int:post_id>', methods=['GET', 'POST'])
