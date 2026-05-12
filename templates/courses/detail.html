@@ -77,9 +77,9 @@
         {% if course.total_duration %}<span>⏱ {{ course.total_duration }} min</span>{% endif %}
       </div>
 
-      {% if enrolled %}
+      {% if current_user.is_admin or enrolled %}
         <a href="{{ url_for('learn', course_id=course.id) }}" class="btn btn-primary w-full justify-center">
-          ▶ Continuar curso
+          ▶ {% if enrolled %}Continuar curso{% else %}Entrar al curso{% endif %}
         </a>
       {% elif course.is_free %}
         <form method="POST" action="{{ url_for('enroll_free', course_id=course.id) }}">
