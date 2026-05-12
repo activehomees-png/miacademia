@@ -144,15 +144,29 @@
       <span id="theme-icon">☀️</span>
     </button>
 
-    <div class="flex items-center gap-2 ml-1">
-      <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center
-                  text-white text-xs font-bold">
-        {{ current_user.initials }}
+    <div class="relative" id="user-menu-wrap">
+      <button onclick="toggleUserMenu()" class="flex items-center gap-2 ml-1 cursor-pointer">
+        <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+          {% if current_user.avatar_data %}
+          <img src="{{ url_for('serve_avatar', user_id=current_user.id) }}" class="w-full h-full object-cover"/>
+          {% else %}
+          {{ current_user.initials }}
+          {% endif %}
+        </div>
+        <span class="text-sm font-medium hidden sm:block" style="color:var(--text1)">{{ current_user.username }}</span>
+        <span class="text-xs hidden sm:block" style="color:var(--text4)">▾</span>
+      </button>
+      <div id="user-menu" class="hidden absolute right-0 top-10 w-44 rounded-xl shadow-lg z-50 overflow-hidden"
+           style="background:var(--surface);border:1px solid var(--border)">
+        <a href="{{ url_for('account_settings') }}"
+           class="flex items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-[#f4f4f5]"
+           style="color:var(--text1)">⚙️ Mi cuenta</a>
+        <div style="border-top:1px solid var(--border)"></div>
+        <a href="{{ url_for('logout') }}"
+           class="flex items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-[#f4f4f5]"
+           style="color:var(--text3)">🚪 Cerrar sesión</a>
       </div>
-      <span class="text-sm font-medium hidden sm:block" style="color:var(--text1)">{{ current_user.username }}</span>
     </div>
-    <a href="{{ url_for('logout') }}"
-       class="text-xs transition hidden sm:block" style="color:var(--text4)">Salir</a>
   </div>
 </header>
 
@@ -195,6 +209,15 @@
 
   // Set correct icon on load
   applyTheme(html.classList.contains('dark'));
+
+  function toggleUserMenu() {
+    document.getElementById('user-menu').classList.toggle('hidden');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('user-menu-wrap');
+    if (wrap && !wrap.contains(e.target))
+      document.getElementById('user-menu').classList.add('hidden');
+  });
 </script>
 
 {% block scripts %}{% endblock %}

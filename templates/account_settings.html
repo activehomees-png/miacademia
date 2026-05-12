@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Mi cuenta{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5">
+
+  <h1 class="text-xl font-bold" style="color:var(--text1)">⚙️ Configuración de cuenta</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for cat, msg in messages %}
+  <div class="px-4 py-3 rounded-lg text-sm border
+    {% if cat=='error' %}bg-red-50 border-red-200 text-red-700
+    {% else %}bg-green-50 border-green-200 text-green-700{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <!-- Foto de perfil -->
+  <div class="rounded-xl p-6 shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
+    <h2 class="text-sm font-bold mb-4" style="color:var(--text1)">🖼️ Foto de perfil</h2>
+    <div class="flex items-center gap-5">
+      <div class="w-20 h-20 rounded-full overflow-hidden bg-violet-600 flex items-center justify-center flex-shrink-0">
+        {% if current_user.avatar_data %}
+        <img src="{{ url_for('serve_avatar', user_id=current_user.id) }}" class="w-full h-full object-cover"/>
+        {% else %}
+        <span class="text-white text-2xl font-bold">{{ current_user.initials }}</span>
+        {% endif %}
+      </div>
+      <form method="POST" enctype="multipart/form-data" class="flex-1">
+        <input type="hidden" name="action" value="avatar"/>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Subir nueva foto (JPG, PNG — máx. 4 MB)</label>
+        <div class="flex gap-2">
+          <input type="file" name="avatar" accept="image/*" class="input py-1.5 text-sm flex-1" required/>
+          <button type="submit" class="btn btn-primary">Subir</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Datos del perfil -->
+  <div class="rounded-xl p-6 shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
+    <h2 class="text-sm font-bold mb-4" style="color:var(--text1)">👤 Datos del perfil</h2>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="action" value="profile"/>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Nombre de usuario</label>
+        <input type="text" name="username" class="input" value="{{ current_user.username }}" minlength="3" required/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Email</label>
+        <input type="email" name="email" class="input" value="{{ current_user.email }}" required/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Bio</label>
+        <textarea name="bio" class="input" rows="3" placeholder="Cuéntanos algo sobre ti...">{{ current_user.bio or '' }}</textarea>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <div class="rounded-xl p-6 shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
+    <h2 class="text-sm font-bold mb-4" style="color:var(--text1)">🔒 Cambiar contraseña</h2>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="action" value="password"/>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Contraseña actual</label>
+        <input type="password" name="current_password" class="input" placeholder="••••••••" required/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Nueva contraseña</label>
+        <input type="password" name="new_password" class="input" placeholder="Mínimo 6 caracteres" minlength="6" required/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Confirmar nueva contraseña</label>
+        <input type="password" name="confirm_password" class="input" placeholder="••••••••" minlength="6" required/>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Info de cuenta -->
+  <div class="rounded-xl p-4 shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium" style="color:var(--text3)">Rol</p>
+        <p class="text-sm font-semibold mt-0.5" style="color:var(--text1)">
+          {% if current_user.is_admin %}⚙️ Administrador{% else %}🎓 Alumno{% endif %}
+        </p>
+      </div>
+      <div>
+        <p class="text-xs font-medium" style="color:var(--text3)">Miembro desde</p>
+        <p class="text-sm font-semibold mt-0.5" style="color:var(--text1)">{{ current_user.created_at.strftime('%d %b %Y') }}</p>
+      </div>
+      <a href="{{ url_for('logout') }}" class="btn btn-secondary text-sm">🚪 Cerrar sesión</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

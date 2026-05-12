@@ -152,6 +152,62 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/cuenta', methods=['GET', 'POST'])
+@login_required
+def account_settings():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'profile':
+            new_username = request.form.get('username', '').strip()
+            new_email    = request.form.get('email', '').strip()
+            new_bio      = request.form.get('bio', '').strip()
+            if new_username and new_username != current_user.username:
+                if User.query.filter_by(username=new_username).first():
+                    flash('Ese nombre de usuario ya está en uso.', 'error')
+                    return redirect(url_for('account_settings'))
+                current_user.username = new_username
+            if new_email and new_email != current_user.email:
+                if User.query.filter_by(email=new_email).first():
+                    flash('Ese email ya está en uso.', 'error')
+                    return redirect(url_for('account_settings'))
+                current_user.email = new_email
+            current_user.bio = new_bio
+            db.session.commit()
+            flash('Perfil actualizado.', 'success')
+
+        elif action == 'avatar':
+            file = request.files.get('avatar')
+            if file and file.filename:
+                data = file.read()
+                if len(data) > 4 * 1024 * 1024:
+                    flash('La imagen no puede superar 4 MB.', 'error')
+                    return redirect(url_for('account_settings'))
+                current_user.avatar_data = data
+                current_user.avatar_mime = file.mimetype or 'image/jpeg'
+                db.session.commit()
+                flash('Foto de perfil actualizada.', 'success')
+
+        elif action == 'password':
+            current_pw = request.form.get('current_password', '')
+            new_pw     = request.form.get('new_password', '')
+            confirm_pw = request.form.get('confirm_password', '')
+            if not current_user.check_password(current_pw):
+                flash('La contraseña actual no es correcta.', 'error')
+                return redirect(url_for('account_settings'))
+            if len(new_pw) < 6:
+                flash('La nueva contraseña debe tener al menos 6 caracteres.', 'error')
+                return redirect(url_for('account_settings'))
+            if new_pw != confirm_pw:
+                flash('Las contraseñas no coinciden.', 'error')
+                return redirect(url_for('account_settings'))
+            current_user.set_password(new_pw)
+            db.session.commit()
+            flash('Contraseña actualizada.', 'success')
+
+        return redirect(url_for('account_settings'))
+    return render_template('account_settings.html')
+
 # ── COMMUNITY ─────────────────────────────────────────────────────────────────
 
 @app.route('/')
