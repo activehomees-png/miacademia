@@ -7,17 +7,23 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
 <style>
   .fc { font-size: 13px; }
-  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: #e4e4e7; }
-  .fc-col-header-cell { background: #f4f4f5; font-weight: 600; color: #52525b; }
-  .fc-daygrid-day { background: #fff; }
-  .fc-daygrid-day:hover { background: #fafafa; }
+  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: var(--border, #e4e4e7); }
+  .fc-col-header-cell { background: var(--hover-bg, #f4f4f5); font-weight: 600; color: var(--text2, #52525b); }
+  .fc-daygrid-day { background: var(--surface, #fff); }
+  .fc-daygrid-day:hover { background: var(--faint, #fafafa); }
   .fc-day-today { background: #f5f3ff !important; }
   .fc-button-primary { background: #7c3aed !important; border-color: #6d28d9 !important; font-weight: 600 !important; }
   .fc-button-primary:hover { background: #6d28d9 !important; }
   .fc-button-active { background: #5b21b6 !important; border-color: #5b21b6 !important; }
-  .fc-toolbar-title { color: #18181b; font-size: 16px !important; font-weight: 700 !important; }
-  .fc-event { cursor: pointer; font-size: 12px; }
-  .fc-daygrid-event { border-radius: 4px; }
+  .fc-toolbar-title { color: var(--text1, #18181b); font-size: 16px !important; font-weight: 700 !important; }
+  .fc-daygrid-day-number { color: var(--text2, #52525b) !important; }
+  .fc-col-header-cell-cushion { color: var(--text2, #52525b) !important; }
+
+  /* Event pill: white bold text always */
+  .fc-event { cursor: pointer; font-size: 12px !important; font-weight: 700 !important; }
+  .fc-event-title, .fc-event-time { color: #fff !important; }
+  .fc-daygrid-event { border-radius: 6px !important; padding: 2px 5px !important; }
+  .fc-daygrid-dot-event .fc-event-title { color: var(--text1, #18181b) !important; font-weight: 600 !important; }
 </style>
 {% endblock %}
 
@@ -61,9 +67,12 @@
           <p class="text-xs text-[#71717a] mt-1 leading-relaxed">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
           {% endif %}
           {% if lc.meet_url %}
-          <a href="{{ lc.meet_url }}" target="_blank" class="btn btn-primary btn-sm mt-2 inline-flex">
-            🎥 Unirse
+          <a href="{{ lc.meet_url }}" target="_blank"
+             class="mt-2 flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-700
+                    text-white text-xs font-semibold rounded-lg transition w-full justify-center">
+            🎥 Unirse a la clase
           </a>
+          <p class="text-[10px] text-[#a1a1aa] mt-1 truncate">{{ lc.meet_url }}</p>
           {% endif %}
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('admin_delete_live_class', class_id=lc.id) }}"
@@ -89,18 +98,22 @@
 </div>
 
 <!-- Modal detalle -->
-<div id="modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
-  <div class="bg-white border border-[#e4e4e7] rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onclick="event.stopPropagation()">
-    <h2 id="modal-title" class="text-lg font-bold text-[#18181b] mb-1"></h2>
-    <p id="modal-time" class="text-sm text-violet-600 font-medium mb-3"></p>
-    <p id="modal-instructor" class="text-sm text-[#71717a] mb-1 hidden"></p>
-    <p id="modal-duration"   class="text-sm text-[#71717a] mb-3 hidden"></p>
-    <p id="modal-desc"       class="text-sm text-[#52525b] mb-4 leading-relaxed hidden"></p>
-    <div class="flex gap-2">
-      <a id="modal-link" href="#" target="_blank" class="btn btn-primary hidden">🎥 Unirse</a>
-      <button onclick="document.getElementById('modal').classList.add('hidden')"
-              class="btn btn-secondary">Cerrar</button>
-    </div>
+<div id="modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
+  <div class="rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onclick="event.stopPropagation()"
+       style="background:var(--surface);border:1px solid var(--border)">
+    <h2 id="modal-title" class="text-lg font-bold mb-1" style="color:var(--text1)"></h2>
+    <p id="modal-time" class="text-sm text-violet-500 font-medium mb-3"></p>
+    <p id="modal-instructor" class="text-sm mb-1 hidden" style="color:var(--text3)"></p>
+    <p id="modal-duration"   class="text-sm mb-3 hidden" style="color:var(--text3)"></p>
+    <p id="modal-desc"       class="text-sm mb-4 leading-relaxed hidden" style="color:var(--text2)"></p>
+    <a id="modal-link" href="#" target="_blank"
+       class="hidden mb-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-600
+              hover:bg-violet-700 text-white font-semibold rounded-xl transition text-sm w-full">
+      🎥 Unirse a la clase
+    </a>
+    <p id="modal-url" class="text-[11px] mb-4 hidden truncate" style="color:var(--text4)"></p>
+    <button onclick="document.getElementById('modal').classList.add('hidden')"
+            class="btn btn-secondary w-full justify-center">Cerrar</button>
   </div>
 </div>
 
@@ -130,8 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
       else descEl.classList.add('hidden');
 
       const linkEl = document.getElementById('modal-link');
-      if (p.meet_url) { linkEl.href = p.meet_url; linkEl.classList.remove('hidden'); }
-      else linkEl.classList.add('hidden');
+      const urlEl  = document.getElementById('modal-url');
+      if (p.meet_url) {
+        linkEl.href = p.meet_url; linkEl.classList.remove('hidden');
+        urlEl.textContent = p.meet_url; urlEl.classList.remove('hidden');
+      } else {
+        linkEl.classList.add('hidden');
+        urlEl.classList.add('hidden');
+      }
 
       document.getElementById('modal').classList.remove('hidden');
     },
