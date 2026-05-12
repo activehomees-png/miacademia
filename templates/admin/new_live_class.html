@@ -31,6 +31,15 @@
         <label class="block text-sm font-medium text-[#52525b] mb-1.5">Enlace (Meet, Zoom...)</label>
         <input type="url" name="meet_url" class="input" placeholder="https://meet.google.com/..."/>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">🔁 Recurrencia</label>
+        <select name="recurrence" class="input">
+          <option value="none">Sin recurrencia (una sola vez)</option>
+          <option value="weekly">Cada semana</option>
+          <option value="monthly">Cada mes</option>
+        </select>
+        <p class="text-xs text-[#a1a1aa] mt-1">Se crearán automáticamente las repeticiones para 2 años.</p>
+      </div>
       <div class="flex gap-3 justify-end pt-2">
         <a href="{{ url_for('admin_live_classes') }}" class="btn btn-secondary">Cancelar</a>
         <button type="submit" class="btn btn-primary">Programar clase</button>

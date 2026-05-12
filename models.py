@@ -180,3 +180,5 @@ class LiveClass(db.Model):
     duration_min = db.Column(db.Integer, default=60)
     meet_url     = db.Column(db.String(500), default='')
     instructor   = db.Column(db.String(100), default='')
+    recurrence   = db.Column(db.String(10), default='none')  # 'none' | 'weekly' | 'monthly'
+    parent_id    = db.Column(db.Integer, db.ForeignKey('live_class.id'), nullable=True)

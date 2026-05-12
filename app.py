@@ -347,7 +347,7 @@ def calendar_data():
         end = c.scheduled_at + timedelta(minutes=c.duration_min) if c.duration_min else None
         events.append({
             'id':    c.id,
-            'title': c.title,
+            'title': ('🔁 ' if c.recurrence != 'none' else '') + c.title,
             'start': c.scheduled_at.isoformat(),
             'end':   end.isoformat() if end else None,
             'extendedProps': {
@@ -640,7 +640,8 @@ def admin_live_classes():
 @admin_required
 def admin_new_live_class():
     if request.method == 'POST':
-        date_str = request.form.get('scheduled_at', '')
+        date_str   = request.form.get('scheduled_at', '')
+        recurrence = request.form.get('recurrence', 'none')
         try:
             scheduled_at = datetime.fromisoformat(date_str)
         except Exception:
@@ -652,10 +653,37 @@ def admin_new_live_class():
             duration_min = int(request.form.get('duration', 60) or 60),
             meet_url     = request.form.get('meet_url', '').strip(),
             instructor   = request.form.get('instructor', '').strip(),
+            recurrence   = recurrence,
         )
         db.session.add(lc)
+        db.session.flush()  # get lc.id before commit
+
+        if recurrence in ('weekly', 'monthly'):
+            iterations = 104 if recurrence == 'weekly' else 24
+            for i in range(1, iterations + 1):
+                if recurrence == 'weekly':
+                    next_dt = scheduled_at + timedelta(weeks=i)
+                else:
+                    month = scheduled_at.month - 1 + i
+                    year  = scheduled_at.year + month // 12
+                    month = month % 12 + 1
+                    import calendar
+                    day = min(scheduled_at.day, calendar.monthrange(year, month)[1])
+                    next_dt = scheduled_at.replace(year=year, month=month, day=day)
+                db.session.add(LiveClass(
+                    title        = lc.title,
+                    description  = lc.description,
+                    scheduled_at = next_dt,
+                    duration_min = lc.duration_min,
+                    meet_url     = lc.meet_url,
+                    instructor   = lc.instructor,
+                    recurrence   = recurrence,
+                    parent_id    = lc.id,
+                ))
+
         db.session.commit()
-        flash('Clase programada.', 'success')
+        label = {'weekly': 'semanal', 'monthly': 'mensual'}.get(recurrence, '')
+        flash(f'Clase programada{"  (recurrencia " + label + ")" if label else ""}.', 'success')
         return redirect(url_for('admin_live_classes'))
     return render_template('admin/new_live_class.html')
 
@@ -664,7 +692,14 @@ def admin_new_live_class():
 @admin_required
 def admin_delete_live_class(class_id):
     lc = LiveClass.query.get_or_404(class_id)
-    db.session.delete(lc)
+    delete_all = request.form.get('delete_all') == '1'
+    if delete_all or (lc.parent_id is None and lc.recurrence != 'none'):
+        # Delete parent + all children
+        LiveClass.query.filter(
+            (LiveClass.id == class_id) | (LiveClass.parent_id == class_id)
+        ).delete(synchronize_session=False)
+    else:
+        db.session.delete(lc)
     db.session.commit()
     flash('Clase eliminada.', 'success')
     return redirect(url_for('admin_live_classes'))
@@ -735,6 +770,8 @@ with app.app_context():
             # point_event table (created by db.create_all, but add index hint)
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_user ON point_event(user_id)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_date ON point_event(created_at)"))
+            conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS recurrence VARCHAR(10) DEFAULT 'none'"))
+            conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES live_class(id)"))
             conn.commit()
     except Exception:
         pass
