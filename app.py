@@ -185,6 +185,20 @@ def post_detail(post_id):
         return redirect(url_for('post_detail', post_id=post_id) + '#comments')
     return render_template('community/post.html', post=post)
 
+@app.route('/comunidad/post/<int:post_id>/comentar', methods=['POST'])
+@login_required
+def add_comment_ajax(post_id):
+    post    = Post.query.get_or_404(post_id)
+    content = request.json.get('content', '').strip() if request.is_json else request.form.get('content', '').strip()
+    if not content:
+        return jsonify({'ok': False}), 400
+    c = Comment(post_id=post_id, user_id=current_user.id, content=content)
+    db.session.add(c)
+    db.session.commit()
+    return jsonify({'ok': True, 'username': current_user.username,
+                    'initials': current_user.initials, 'content': content,
+                    'timeago': 'ahora mismo'})
+
 @app.route('/comunidad/post/<int:post_id>/like', methods=['POST'])
 @login_required
 def like_post(post_id):

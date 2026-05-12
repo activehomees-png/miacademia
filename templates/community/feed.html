@@ -28,36 +28,96 @@
     </div>
 
     <!-- Posts -->
-    <div class="space-y-2">
+    <div class="space-y-3">
       {% for post in posts %}
-      <a href="{{ url_for('post_detail', post_id=post.id) }}"
-         class="bg-white border border-[#e4e4e7] rounded-xl p-4 flex gap-4 hover:border-[#c4c4c7] hover:shadow-sm transition cursor-pointer block">
-        <div class="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center
-                    text-white text-sm font-bold flex-shrink-0 mt-0.5">
-          {{ post.author.initials }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 flex-wrap mb-1">
-            <span class="font-semibold text-[#18181b] text-sm">{{ post.author.username }}</span>
-            <span class="text-[#a1a1aa] text-xs">· {{ post.created_at | timeago }}</span>
-            {% if post.pinned %}
-            <span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-semibold">📌 Fijado</span>
-            {% endif %}
-            {% if post.category %}
-            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style="background:{{ post.category.color }}18; color:{{ post.category.color }}">
-              {{ post.category.emoji }} {{ post.category.name }}
-            </span>
-            {% endif %}
+      <div class="bg-white border border-[#e4e4e7] rounded-xl shadow-sm overflow-hidden">
+
+        <!-- Post header + content -->
+        <div class="p-4 flex gap-3">
+          <div class="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center
+                      text-white text-sm font-bold flex-shrink-0 mt-0.5">
+            {{ post.author.initials }}
           </div>
-          <p class="font-semibold text-[#18181b] text-sm leading-snug">{{ post.title }}</p>
-          <p class="text-[#71717a] text-xs mt-0.5 line-clamp-1">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</p>
-          <div class="flex items-center gap-4 mt-2 text-[11px] text-[#a1a1aa]">
-            <span>❤️ {{ post.likes | length }}</span>
-            <span>💬 {{ post.comments | length }} comentarios</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-semibold text-[#18181b] text-sm">{{ post.author.username }}</span>
+              <span class="text-[#a1a1aa] text-xs">· {{ post.created_at | timeago }}</span>
+              {% if post.pinned %}
+              <span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-semibold">📌 Fijado</span>
+              {% endif %}
+              {% if post.category %}
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                    style="background:{{ post.category.color }}18; color:{{ post.category.color }}">
+                {{ post.category.emoji }} {{ post.category.name }}
+              </span>
+              {% endif %}
+              {% if current_user.is_admin %}
+              <form method="POST" action="{{ url_for('pin_post', post_id=post.id) }}" class="ml-auto">
+                <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-amber-500 transition">
+                  {{ '📌 Desfijar' if post.pinned else '📌 Fijar' }}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+            <p class="font-semibold text-[#18181b] text-sm leading-snug">{{ post.title }}</p>
+            <p class="text-[#71717a] text-sm mt-1 leading-relaxed whitespace-pre-wrap">{{ post.content }}</p>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4 mt-3 pt-3 border-t border-[#f4f4f5]">
+              <button onclick="toggleLike({{ post.id }}, this)"
+                class="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-rose-500 transition">
+                <span class="like-icon">{{ '❤️' if current_user in post.likes else '🤍' }}</span>
+                <span class="like-count">{{ post.likes | length }}</span>
+              </button>
+              <button onclick="toggleComments({{ post.id }})"
+                class="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-violet-600 transition">
+                💬 <span class="comment-count-{{ post.id }}">{{ post.comments | length }}</span> comentarios
+              </button>
+            </div>
           </div>
         </div>
-      </a>
+
+        <!-- Inline comments (hidden by default) -->
+        <div id="comments-{{ post.id }}" class="hidden border-t border-[#f4f4f5] bg-[#fafafa]">
+
+          <!-- Existing comments -->
+          <div class="px-4 pt-3 space-y-3" id="comment-list-{{ post.id }}">
+            {% for comment in post.comments %}
+            <div class="flex gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center
+                          text-white text-[10px] font-bold flex-shrink-0 mt-0.5">
+                {{ comment.author.initials }}
+              </div>
+              <div class="flex-1 bg-white border border-[#e4e4e7] rounded-xl px-3 py-2">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <span class="text-xs font-semibold text-[#18181b]">{{ comment.author.username }}</span>
+                  <span class="text-[10px] text-[#a1a1aa]">{{ comment.created_at | timeago }}</span>
+                </div>
+                <p class="text-xs text-[#52525b] leading-relaxed">{{ comment.content }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- New comment form -->
+          <div class="flex gap-2.5 px-4 py-3">
+            <div class="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center
+                        text-white text-[10px] font-bold flex-shrink-0 mt-0.5">
+              {{ current_user.initials }}
+            </div>
+            <div class="flex-1 flex gap-2">
+              <textarea rows="1" placeholder="Escribe un comentario..."
+                        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment({{ post.id }},this)}"
+                        id="comment-input-{{ post.id }}"
+                        class="input text-xs py-2 resize-none overflow-hidden flex-1"></textarea>
+              <button onclick="submitComment({{ post.id }}, document.getElementById('comment-input-{{ post.id }}'))"
+                      class="btn btn-primary btn-sm self-end flex-shrink-0">Enviar</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
       {% else %}
       <div class="bg-white border border-[#e4e4e7] rounded-xl p-12 text-center">
         <p class="text-3xl mb-2">💬</p>
@@ -68,9 +128,8 @@
     </div>
   </div>
 
-  <!-- Panel de comunidad (derecha, estilo Skool) -->
+  <!-- Panel de comunidad (derecha) -->
   <div class="w-64 flex-shrink-0 hidden lg:block space-y-4">
-
     <div class="bg-white border border-[#e4e4e7] rounded-xl overflow-hidden shadow-sm">
 
       <!-- Imagen banner 16:9 -->
@@ -146,8 +205,55 @@
         {% endif %}
       </div>
     </div>
-
   </div>
 
 </div>
+
+<script>
+function toggleComments(postId) {
+  const el = document.getElementById('comments-' + postId);
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) {
+    document.getElementById('comment-input-' + postId).focus();
+  }
+}
+
+async function toggleLike(postId, btn) {
+  const res  = await fetch(`/comunidad/post/${postId}/like`, {method:'POST'});
+  const data = await res.json();
+  btn.querySelector('.like-icon').textContent  = data.liked ? '❤️' : '🤍';
+  btn.querySelector('.like-count').textContent = data.likes;
+}
+
+async function submitComment(postId, textarea) {
+  const content = textarea.value.trim();
+  if (!content) return;
+  const res  = await fetch(`/comunidad/post/${postId}/comentar`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({content})
+  });
+  const data = await res.json();
+  if (!data.ok) return;
+  textarea.value = '';
+  textarea.style.height = 'auto';
+
+  const list = document.getElementById('comment-list-' + postId);
+  const div  = document.createElement('div');
+  div.className = 'flex gap-2.5';
+  div.innerHTML = `
+    <div class="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5">${data.initials}</div>
+    <div class="flex-1 bg-white border border-[#e4e4e7] rounded-xl px-3 py-2">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-xs font-semibold text-[#18181b]">${data.username}</span>
+        <span class="text-[10px] text-[#a1a1aa]">ahora mismo</span>
+      </div>
+      <p class="text-xs text-[#52525b] leading-relaxed">${data.content}</p>
+    </div>`;
+  list.appendChild(div);
+
+  const counter = document.querySelector('.comment-count-' + postId);
+  if (counter) counter.textContent = parseInt(counter.textContent) + 1;
+}
+</script>
 {% endblock %}
