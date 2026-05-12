@@ -133,7 +133,7 @@
         <h3 class="text-xs font-bold text-[#18181b] uppercase tracking-wide mb-3">📎 Recursos adjuntos</h3>
         <div class="space-y-2">
           {% for file in current_lesson.files %}
-          <a href="{{ file.url }}" target="_blank" rel="noopener noreferrer"
+          <a href="{{ url_for('serve_lesson_file', file_id=file.id) }}"
              class="flex items-center gap-3 p-3 rounded-lg border border-[#e4e4e7] hover:border-violet-300
                     hover:bg-violet-50 transition group">
             <span class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0 text-sm">📄</span>
@@ -164,10 +164,10 @@
             </div>
             {% endif %}
             <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=current_lesson.id) }}"
-                  class="flex flex-col gap-2">
-              <input type="text" name="name" class="input" placeholder="Nombre del archivo (ej: Presentación PDF)" required/>
-              <input type="url"  name="url"  class="input" placeholder="URL del archivo (Google Drive, Dropbox...)" required/>
-              <button type="submit" class="btn btn-primary btn-sm self-start">Añadir archivo</button>
+                  enctype="multipart/form-data" class="flex flex-col gap-2">
+              <input type="text" name="name" class="input" placeholder="Nombre del archivo (ej: Presentación.pdf)" required/>
+              <input type="file" name="file" class="input py-1.5" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3" required/>
+              <button type="submit" class="btn btn-primary btn-sm self-start">Subir archivo</button>
             </form>
           </div>
         </details>

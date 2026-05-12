@@ -78,10 +78,10 @@
             </div>
             {% endfor %}
             <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=lesson.id) }}"
-                  class="flex flex-col gap-1.5 mt-2">
+                  enctype="multipart/form-data" class="flex flex-col gap-1.5 mt-2">
               <input type="text" name="name" class="input text-xs py-1" placeholder="Nombre del archivo" required/>
-              <input type="url"  name="url"  class="input text-xs py-1" placeholder="URL (Drive, Dropbox...)" required/>
-              <button type="submit" class="btn btn-primary btn-sm self-start text-xs">+ Añadir archivo</button>
+              <input type="file" name="file" class="input text-xs py-1" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3" required/>
+              <button type="submit" class="btn btn-primary btn-sm self-start text-xs">+ Subir archivo</button>
             </form>
           </div>
         </details>

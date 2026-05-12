@@ -1,11 +1,13 @@
 import os
+import io
 from functools import wraps
 from datetime import datetime, timedelta
 
 from flask import (Flask, render_template, redirect, url_for,
-                   request, flash, jsonify, abort)
+                   request, flash, jsonify, abort, send_file)
 from flask_login import (LoginManager, login_user, logout_user,
                          login_required, current_user)
+from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
                     Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass)
@@ -468,12 +470,30 @@ def admin_delete_lesson(lesson_id):
 def admin_add_lesson_file(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     name = request.form.get('name', '').strip()
-    url  = request.form.get('url', '').strip()
-    if name and url:
-        db.session.add(LessonFile(lesson_id=lesson_id, name=name, url=url))
+    f    = request.files.get('file')
+    if name and f and f.filename:
+        data = f.read()
+        db.session.add(LessonFile(
+            lesson_id = lesson_id,
+            name      = name,
+            mimetype  = f.mimetype or 'application/octet-stream',
+            size      = len(data),
+            data      = data,
+        ))
         db.session.commit()
-        flash('Archivo añadido.', 'success')
+        flash('Archivo subido correctamente.', 'success')
     return redirect(url_for('admin_edit_course', course_id=lesson.section.course_id))
+
+@app.route('/archivo/<int:file_id>')
+@login_required
+def serve_lesson_file(file_id):
+    f = LessonFile.query.get_or_404(file_id)
+    return send_file(
+        io.BytesIO(f.data),
+        mimetype=f.mimetype,
+        as_attachment=True,
+        download_name=f.name,
+    )
 
 @app.route('/admin/archivo/<int:file_id>/borrar', methods=['POST'])
 @login_required
@@ -574,6 +594,16 @@ def seed_db():
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
     db.create_all()
+    # Migrate lesson_file: switch from url-based to binary storage
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS data BYTEA"))
+            conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS mimetype VARCHAR(100) DEFAULT 'application/octet-stream'"))
+            conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS size INTEGER DEFAULT 0"))
+            conn.execute(text("ALTER TABLE lesson_file DROP COLUMN IF EXISTS url"))
+            conn.commit()
+    except Exception:
+        pass
     seed_db()
 
 if __name__ == '__main__':

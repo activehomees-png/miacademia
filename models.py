@@ -128,7 +128,9 @@ class LessonFile(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     lesson_id  = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
     name       = db.Column(db.String(200), nullable=False)
-    url        = db.Column(db.String(500), nullable=False)
+    mimetype   = db.Column(db.String(100), default='application/octet-stream')
+    size       = db.Column(db.Integer, default=0)
+    data       = db.Column(db.LargeBinary, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
