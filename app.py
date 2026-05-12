@@ -545,11 +545,8 @@ def seed_db():
     db.session.commit()
 
 if __name__ == '__main__':
-    import webbrowser
     with app.app_context():
         db.create_all()
         seed_db()
-    webbrowser.open('http://127.0.0.1:5002')
-    print('Academia en http://127.0.0.1:5002')
-    print('Admin: admin@academia.com / admin123')
-    app.run(host='127.0.0.1', port=5002, debug=False)
+    port = int(os.environ.get('PORT', 5002))
+    app.run(host='0.0.0.0', port=port, debug=False)
