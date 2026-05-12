@@ -73,16 +73,18 @@
 
     <div class="bg-white border border-[#e4e4e7] rounded-xl overflow-hidden shadow-sm">
 
-      <!-- Imagen banner -->
-      {% if site.community_image %}
-      <div class="w-full h-36 bg-[#1a1a1a] overflow-hidden">
+      <!-- Imagen banner 16:9 -->
+      <div class="w-full aspect-video overflow-hidden bg-[#1a1a1a]">
+        {% if site.community_image_data %}
+        <img src="{{ url_for('serve_banner') }}" alt="Comunidad" class="w-full h-full object-cover"/>
+        {% elif site.community_image %}
         <img src="{{ site.community_image }}" alt="Comunidad" class="w-full h-full object-cover"/>
+        {% else %}
+        <div class="w-full h-full bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center">
+          <span class="text-4xl">🎓</span>
+        </div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="w-full h-32 bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center">
-        <span class="text-4xl">🎓</span>
-      </div>
-      {% endif %}
 
       <div class="p-4">
         <h2 class="font-bold text-[#18181b] text-sm mb-1">{{ site.academy_name }}</h2>
