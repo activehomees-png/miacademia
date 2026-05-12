@@ -1,17 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}Comunidad{% endblock %}
+{% block content_class %}max-w-5xl mx-auto{% endblock %}
 
 {% block content %}
 <div class="flex gap-6">
 
   <!-- FEED -->
   <div class="flex-1 min-w-0">
-    <div class="flex items-center justify-between mb-5">
-      <h1 class="text-xl font-bold text-[#18181b]">Comunidad</h1>
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-lg font-bold text-[#18181b]">Comunidad</h1>
       <a href="{{ url_for('new_post') }}" class="btn btn-primary">✏️ Publicar</a>
     </div>
 
-    <!-- Filtros -->
+    <!-- Filtros por categoría -->
     <div class="flex flex-wrap gap-2 mb-5">
       <a href="{{ url_for('community') }}"
          class="badge cursor-pointer transition {% if not active_cat %}bg-violet-100 text-violet-700{% else %}bg-white border border-[#e4e4e7] text-[#71717a] hover:bg-[#f4f4f5]{% endif %}">
@@ -67,23 +68,67 @@
     </div>
   </div>
 
-  <!-- Sidebar derecho -->
-  <div class="w-60 flex-shrink-0 hidden lg:block space-y-4">
-    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4">
-      <h3 class="text-sm font-semibold text-[#18181b] mb-3">📂 Categorías</h3>
-      <div class="space-y-0.5">
-        {% for cat in categories %}
-        <a href="{{ url_for('community', cat=cat.id) }}"
-           class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#f4f4f5] transition">
-          <span class="text-sm text-[#52525b]">{{ cat.emoji }} {{ cat.name }}</span>
-          <span class="text-[11px] text-[#a1a1aa]">{{ cat.posts | length }}</span>
+  <!-- Panel de comunidad (derecha, estilo Skool) -->
+  <div class="w-64 flex-shrink-0 hidden lg:block space-y-4">
+
+    <div class="bg-white border border-[#e4e4e7] rounded-xl overflow-hidden shadow-sm">
+
+      <!-- Imagen banner -->
+      {% if site.community_image %}
+      <div class="w-full h-36 bg-[#1a1a1a] overflow-hidden">
+        <img src="{{ site.community_image }}" alt="Comunidad" class="w-full h-full object-cover"/>
+      </div>
+      {% else %}
+      <div class="w-full h-32 bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center">
+        <span class="text-4xl">🎓</span>
+      </div>
+      {% endif %}
+
+      <div class="p-4">
+        <h2 class="font-bold text-[#18181b] text-sm mb-1">{{ site.academy_name }}</h2>
+
+        {% if site.community_description %}
+        <p class="text-xs text-[#71717a] leading-relaxed mb-3">{{ site.community_description }}</p>
+        {% endif %}
+
+        {% if site.link_url %}
+        <a href="{{ site.link_url }}" target="_blank" rel="noopener noreferrer"
+           class="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-700 font-medium mb-3 transition">
+          🔗 {{ site.link_text or site.link_url }}
         </a>
-        {% endfor %}
+        {% endif %}
+
+        <!-- Stats -->
+        <div class="flex gap-4 py-3 border-t border-[#f4f4f5]">
+          <div class="text-center">
+            <p class="font-bold text-[#18181b] text-sm">{{ member_count }}</p>
+            <p class="text-[10px] text-[#a1a1aa]">Miembros</p>
+          </div>
+          <div class="text-center">
+            <p class="font-bold text-[#18181b] text-sm">{{ admin_count }}</p>
+            <p class="text-[10px] text-[#a1a1aa]">Admins</p>
+          </div>
+        </div>
+
+        <!-- Admin avatars -->
+        {% if admins %}
+        <div class="flex gap-1.5 mb-3">
+          {% for admin in admins %}
+          <div class="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center
+                      text-white text-[10px] font-bold" title="{{ admin.username }}">
+            {{ admin.initials }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_settings') }}"
+           class="btn btn-secondary w-full justify-center text-xs">⚙️ Editar comunidad</a>
+        {% endif %}
       </div>
     </div>
-    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4">
-      <a href="{{ url_for('new_post') }}" class="btn btn-primary w-full justify-center">✏️ Publicar</a>
-    </div>
+
   </div>
 
 </div>

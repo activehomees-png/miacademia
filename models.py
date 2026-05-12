@@ -149,6 +149,15 @@ class LessonProgress(db.Model):
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class SiteSettings(db.Model):
+    id                    = db.Column(db.Integer, primary_key=True)
+    academy_name          = db.Column(db.String(100), default='Mi Academia')
+    community_image       = db.Column(db.String(500), default='')
+    community_description = db.Column(db.Text, default='')
+    link_url              = db.Column(db.String(500), default='')
+    link_text             = db.Column(db.String(200), default='¡Empieza por aquí!')
+
+
 class LiveClass(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     title        = db.Column(db.String(200), nullable=False)

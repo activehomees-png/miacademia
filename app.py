@@ -10,7 +10,8 @@ from flask_login import (LoginManager, login_user, logout_user,
 from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
-                    Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass)
+                    Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass,
+                    SiteSettings)
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -47,6 +48,21 @@ def timeago(dt: datetime) -> str:
     return f'hace {int(s//86400)} d'
 
 app.jinja_env.filters['timeago'] = timeago
+
+def get_settings():
+    s = SiteSettings.query.first()
+    if not s:
+        s = SiteSettings()
+        db.session.add(s)
+        db.session.commit()
+    return s
+
+@app.context_processor
+def inject_settings():
+    try:
+        return {'site': get_settings()}
+    except Exception:
+        return {'site': SiteSettings()}
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -120,8 +136,12 @@ def community():
         q = q.filter_by(category_id=cat_id)
     posts      = q.limit(50).all()
     categories = Category.query.all()
+    member_count = User.query.count()
+    admin_count  = User.query.filter_by(role='admin').count()
+    admins       = User.query.filter_by(role='admin').limit(5).all()
     return render_template('community/feed.html',
-                           posts=posts, categories=categories, active_cat=cat_id)
+                           posts=posts, categories=categories, active_cat=cat_id,
+                           member_count=member_count, admin_count=admin_count, admins=admins)
 
 @app.route('/comunidad/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -338,6 +358,22 @@ def admin_dashboard():
     }
     categories = Category.query.all()
     return render_template('admin/dashboard.html', stats=stats, categories=categories)
+
+@app.route('/admin/ajustes', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_settings():
+    s = get_settings()
+    if request.method == 'POST':
+        s.academy_name          = request.form.get('academy_name', s.academy_name).strip()
+        s.community_image       = request.form.get('community_image', '').strip()
+        s.community_description = request.form.get('community_description', '').strip()
+        s.link_url              = request.form.get('link_url', '').strip()
+        s.link_text             = request.form.get('link_text', '').strip()
+        db.session.commit()
+        flash('Ajustes guardados.', 'success')
+        return redirect(url_for('admin_settings'))
+    return render_template('admin/settings.html', s=s)
 
 @app.route('/admin/categorias/nueva', methods=['POST'])
 @login_required
@@ -577,6 +613,8 @@ def not_found(e):
 # ── INIT ──────────────────────────────────────────────────────────────────────
 
 def seed_db():
+    if not SiteSettings.query.first():
+        db.session.add(SiteSettings())
     if not User.query.filter_by(role='admin').first():
         admin = User(username='admin', email='admin@academia.com', role='admin')
         admin.set_password('admin123')

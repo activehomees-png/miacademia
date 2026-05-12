@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Ajustes de comunidad{% endblock %}
+{% block content_class %}max-w-2xl mx-auto{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-bold text-[#18181b] mb-6">⚙️ Ajustes de comunidad</h1>
+
+<div class="bg-white border border-[#e4e4e7] rounded-xl p-6 shadow-sm">
+  <form method="POST" class="space-y-5">
+
+    <div>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">Nombre de la academia</label>
+      <input type="text" name="academy_name" class="input" value="{{ s.academy_name }}"/>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">URL imagen de portada</label>
+      <input type="url" name="community_image" class="input" value="{{ s.community_image }}"
+             placeholder="https://... (imagen que aparece en el panel de comunidad)"/>
+      {% if s.community_image %}
+      <img src="{{ s.community_image }}" class="mt-2 h-24 rounded-lg object-cover"/>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">Descripción de la comunidad</label>
+      <textarea name="community_description" class="input" rows="3"
+                placeholder="Describe brevemente tu comunidad...">{{ s.community_description }}</textarea>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">URL del enlace destacado</label>
+      <input type="url" name="link_url" class="input" value="{{ s.link_url }}"
+             placeholder="https://..."/>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">Texto del enlace</label>
+      <input type="text" name="link_text" class="input" value="{{ s.link_text }}"
+             placeholder="¡Empieza por aquí!"/>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full justify-center">Guardar ajustes</button>
+  </form>
+</div>
+{% endblock %}
