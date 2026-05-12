@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{% block title %}Academia{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  body  { background:#0f0f0f; color:#e2e8f0; font-family:'Segoe UI',system-ui,sans-serif; margin:0; }
+
+  /* Sidebar */
+  .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh;
+             background:#111; border-right:1px solid #1e1e1e;
+             display:flex; flex-direction:column; z-index:50; overflow-y:auto; }
+  .main    { margin-left:240px; min-height:100vh; }
+
+  .nav-link { display:flex; align-items:center; gap:10px; padding:9px 14px;
+              border-radius:8px; color:#94a3b8; font-size:13.5px; font-weight:500;
+              text-decoration:none; transition:all .15s; }
+  .nav-link:hover  { background:#1c1c1c; color:#e2e8f0; }
+  .nav-link.active { background:#1e1b4b; color:#818cf8; }
+
+  .card  { background:#191919; border:1px solid #252525; border-radius:12px; }
+  .input { background:#141414; border:1px solid #2a2a2a; border-radius:8px;
+           padding:10px 14px; color:#e2e8f0; font-size:14px; width:100%;
+           outline:none; box-sizing:border-box; }
+  .input:focus { border-color:#6366f1; }
+  textarea.input { resize:vertical; min-height:90px; }
+
+  .btn  { display:inline-flex; align-items:center; gap:6px; padding:8px 16px;
+          border-radius:8px; font-size:13.5px; font-weight:600; border:none;
+          cursor:pointer; transition:all .15s; text-decoration:none; }
+  .btn-primary { background:#6366f1; color:#fff; }
+  .btn-primary:hover { background:#4f46e5; }
+  .btn-secondary { background:#1e1e1e; color:#94a3b8; border:1px solid #2a2a2a; }
+  .btn-secondary:hover { background:#252525; color:#e2e8f0; }
+  .btn-danger { background:#3b0d0d; color:#f87171; border:1px solid #5c1010; }
+  .btn-danger:hover { background:#4a1111; }
+  .btn-sm { padding:5px 11px; font-size:12px; }
+
+  .badge { display:inline-block; padding:2px 9px; border-radius:999px;
+           font-size:11px; font-weight:600; }
+
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-thumb { background:#2a2a2a; border-radius:3px; }
+
+  @media(max-width:768px){
+    .sidebar { transform:translateX(-100%); transition:.3s; }
+    .sidebar.open { transform:translateX(0); }
+    .main { margin-left:0; }
+    .mobile-menu-btn { display:flex !important; }
+  }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="px-4 py-5 border-b border-[#1e1e1e]">
+    <p class="font-bold text-white text-base">🎓 Mi Academia</p>
+    <p class="text-[11px] text-[#4b5563] mt-0.5">Plataforma educativa</p>
+  </div>
+
+  <nav class="flex-1 p-3 space-y-1">
+    <a href="{{ url_for('community') }}"
+       class="nav-link {% if request.endpoint in ('community','post_detail','new_post') %}active{% endif %}">
+      <span class="text-base">💬</span> Comunidad
+    </a>
+    <a href="{{ url_for('courses') }}"
+       class="nav-link {% if 'course' in (request.endpoint or '') or request.endpoint=='learn' %}active{% endif %}">
+      <span class="text-base">📚</span> Cursos
+    </a>
+    <a href="{{ url_for('calendar') }}"
+       class="nav-link {% if request.endpoint=='calendar' %}active{% endif %}">
+      <span class="text-base">📅</span> Clases en directo
+    </a>
+
+    {% if current_user.is_admin %}
+    <div class="pt-3 mt-3 border-t border-[#1e1e1e]">
+      <p class="text-[10px] uppercase tracking-widest text-[#374151] px-2 mb-2">Administración</p>
+      <a href="{{ url_for('admin_dashboard') }}"
+         class="nav-link {% if 'admin' in (request.endpoint or '') %}active{% endif %}">
+        <span class="text-base">⚙️</span> Panel admin
+      </a>
+      <a href="{{ url_for('admin_courses') }}" class="nav-link">
+        <span class="text-base">📝</span> Gestionar cursos
+      </a>
+      <a href="{{ url_for('admin_live_classes') }}" class="nav-link">
+        <span class="text-base">🎥</span> Clases en directo
+      </a>
+      <a href="{{ url_for('admin_users') }}" class="nav-link">
+        <span class="text-base">👥</span> Usuarios
+      </a>
+    </div>
+    {% endif %}
+  </nav>
+
+  <!-- User footer -->
+  <div class="p-3 border-t border-[#1e1e1e]">
+    <div class="flex items-center gap-3 px-2 mb-2">
+      <div class="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center
+                  text-white text-sm font-bold flex-shrink-0">
+        {{ current_user.initials }}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-white truncate">{{ current_user.username }}</p>
+        <p class="text-[11px] text-[#4b5563] truncate">{{ current_user.email }}</p>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="nav-link text-[#4b5563]">
+      <span>🚪</span> Cerrar sesión
+    </a>
+  </div>
+</aside>
+
+<!-- MOBILE MENU BTN -->
+<button class="mobile-menu-btn hidden fixed top-3 left-3 z-[60] bg-[#1e1e1e] p-2 rounded-lg
+               border border-[#2a2a2a]" onclick="document.getElementById('sidebar').classList.toggle('open')">
+  ☰
+</button>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="fixed top-4 right-4 z-[70] space-y-2 max-w-sm" id="flash-wrap">
+    {% for cat, msg in messages %}
+    <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium shadow-xl
+      {% if cat=='error' %}bg-red-950 border border-red-800 text-red-300
+      {% else %}bg-green-950 border border-green-800 text-green-300{% endif %}">
+      <span>{{ '❌' if cat=='error' else '✅' }}</span>
+      <span>{{ msg }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <script>setTimeout(()=>{ const el=document.getElementById('flash-wrap'); if(el)el.remove(); },4500)</script>
+  {% endif %}
+  {% endwith %}
+
+  <div class="p-6 {% block content_class %}max-w-4xl mx-auto{% endblock %}">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

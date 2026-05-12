@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+
+  <a href="{{ url_for('community') }}" class="text-sm text-[#6b7280] hover:text-white mb-4 inline-flex items-center gap-1">
+    ← Volver a la comunidad
+  </a>
+
+  <!-- Post -->
+  <div class="card p-6 mt-3">
+    <div class="flex items-start gap-4">
+      <div class="w-10 h-10 rounded-full bg-indigo-700 flex items-center justify-center
+                  text-white font-bold flex-shrink-0">
+        {{ post.author.initials }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <span class="font-semibold text-white text-sm">{{ post.author.username }}</span>
+          <span class="text-[#4b5563] text-xs">{{ post.created_at | timeago }}</span>
+          {% if post.pinned %}
+          <span class="text-[10px] bg-amber-900/40 text-amber-400 px-2 py-0.5 rounded-full">📌 Fijado</span>
+          {% endif %}
+          {% if post.category %}
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                style="background:{{ post.category.color }}22; color:{{ post.category.color }}">
+            {{ post.category.emoji }} {{ post.category.name }}
+          </span>
+          {% endif %}
+        </div>
+        <h1 class="text-lg font-bold text-white mb-3">{{ post.title }}</h1>
+        <div class="text-[#cbd5e1] text-sm leading-relaxed whitespace-pre-wrap">{{ post.content }}</div>
+
+        <!-- Acciones -->
+        <div class="flex items-center gap-4 mt-5 pt-4 border-t border-[#252525]">
+          <button onclick="toggleLike({{ post.id }})"
+            class="flex items-center gap-2 text-sm text-[#6b7280] hover:text-rose-400 transition" id="like-btn">
+            <span id="like-icon">{{ '❤️' if current_user in post.likes else '🤍' }}</span>
+            <span id="like-count">{{ post.likes | length }}</span> Me gusta
+          </button>
+          <span class="text-[#4b5563] text-sm">💬 {{ post.comments | length }} comentarios</span>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('pin_post', post_id=post.id) }}" class="ml-auto">
+            <button type="submit" class="text-xs text-[#4b5563] hover:text-amber-400 transition">
+              {{ '📌 Desfijar' if post.pinned else '📌 Fijar' }}
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comentarios -->
+  <div class="mt-6" id="comments">
+    <h2 class="text-sm font-semibold text-[#9ca3af] mb-4">
+      {{ post.comments | length }} comentario{{ 's' if post.comments | length != 1 }}
+    </h2>
+
+    <div class="space-y-3 mb-6">
+      {% for comment in post.comments %}
+      <div class="flex gap-3">
+        <div class="w-8 h-8 rounded-full bg-indigo-800 flex items-center justify-center
+                    text-white text-xs font-bold flex-shrink-0 mt-0.5">
+          {{ comment.author.initials }}
+        </div>
+        <div class="flex-1 card p-4">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-semibold text-white">{{ comment.author.username }}</span>
+            <span class="text-xs text-[#4b5563]">{{ comment.created_at | timeago }}</span>
+          </div>
+          <p class="text-sm text-[#cbd5e1] whitespace-pre-wrap">{{ comment.content }}</p>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-sm text-[#4b5563]">Sé el primero en comentar.</p>
+      {% endfor %}
+    </div>
+
+    <!-- Nuevo comentario -->
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center
+                  text-white text-xs font-bold flex-shrink-0 mt-1">
+        {{ current_user.initials }}
+      </div>
+      <form method="POST" class="flex-1">
+        <textarea name="content" class="input" rows="3"
+          placeholder="Escribe tu comentario..." required></textarea>
+        <div class="flex justify-end mt-2">
+          <button type="submit" class="btn btn-primary btn-sm">Comentar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+async function toggleLike(postId) {
+  const res  = await fetch(`/comunidad/post/${postId}/like`, {method:'POST'});
+  const data = await res.json();
+  document.getElementById('like-icon').textContent  = data.liked ? '❤️' : '🤍';
+  document.getElementById('like-count').textContent = data.likes;
+}
+</script>
+{% endblock %}

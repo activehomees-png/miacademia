@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Nuevo curso{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+  <a href="{{ url_for('admin_courses') }}" class="text-sm text-[#6b7280] hover:text-white mb-4 inline-flex items-center gap-1">← Volver</a>
+  <h1 class="text-xl font-bold text-white mt-3 mb-6">➕ Nuevo curso</h1>
+  <div class="card p-6">
+    <form method="POST" class="space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-[#9ca3af] mb-1.5">Título *</label>
+        <input type="text" name="title" class="input" placeholder="Nombre del curso" required/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#9ca3af] mb-1.5">Subtítulo</label>
+        <input type="text" name="subtitle" class="input" placeholder="Breve descripción"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#9ca3af] mb-1.5">Descripción completa</label>
+        <textarea name="description" class="input" rows="5" placeholder="Qué aprenderán los alumnos..."></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#9ca3af] mb-1.5">URL de imagen de portada</label>
+        <input type="url" name="image_url" class="input" placeholder="https://..."/>
+        <p class="text-xs text-[#4b5563] mt-1">Pega una URL de imagen (recomendado 16:9)</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#9ca3af] mb-1.5">Precio (€)</label>
+        <input type="number" name="price" class="input" value="0" min="0" step="0.01" placeholder="0 = gratuito"/>
+      </div>
+      <div class="flex items-center gap-3">
+        <input type="checkbox" name="published" id="pub" class="w-4 h-4 accent-indigo-500"/>
+        <label for="pub" class="text-sm text-[#9ca3af]">Publicar inmediatamente</label>
+      </div>
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Crear curso →</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

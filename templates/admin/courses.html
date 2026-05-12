@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Gestionar cursos{% endblock %}
+{% block content_class %}max-w-4xl mx-auto{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-bold text-white">📝 Gestionar cursos</h1>
+  <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary">➕ Nuevo curso</a>
+</div>
+
+{% if courses %}
+<div class="space-y-3">
+  {% for course in courses %}
+  <div class="card p-4 flex items-center gap-4">
+    <div class="w-16 h-12 bg-[#1e1e1e] rounded-lg overflow-hidden flex-shrink-0">
+      {% if course.image %}
+      <img src="{{ course.image }}" class="w-full h-full object-cover"/>
+      {% else %}
+      <div class="w-full h-full flex items-center justify-center text-xl">📚</div>
+      {% endif %}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-0.5">
+        <p class="font-semibold text-white text-sm truncate">{{ course.title }}</p>
+        <span class="badge text-[10px] {% if course.is_published %}bg-green-900/50 text-green-400{% else %}bg-[#252525] text-[#6b7280]{% endif %}">
+          {{ '✓ Publicado' if course.is_published else 'Borrador' }}
+        </span>
+      </div>
+      <p class="text-xs text-[#4b5563]">
+        {{ course.lesson_count }} lecciones ·
+        {% if course.is_free %}Gratis{% else %}{{ '%.2f' % course.price }}€{% endif %} ·
+        {{ course.enrollments | length }} inscritos
+      </p>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <a href="{{ url_for('admin_edit_course', course_id=course.id) }}"
+         class="btn btn-secondary btn-sm">Editar</a>
+      <form method="POST" action="{{ url_for('admin_delete_course', course_id=course.id) }}"
+            onsubmit="return confirm('¿Eliminar este curso y todo su contenido?')">
+        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-16 text-center">
+  <p class="text-4xl mb-3">📚</p>
+  <p class="text-[#6b7280]">Aún no has creado ningún curso.</p>
+  <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary mt-4 inline-flex">Crear primer curso</a>
+</div>
+{% endif %}
+{% endblock %}

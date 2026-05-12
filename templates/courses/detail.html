@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content_class %}max-w-4xl mx-auto{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('courses') }}" class="text-sm text-[#6b7280] hover:text-white mb-4 inline-flex items-center gap-1">
+  ← Volver a cursos
+</a>
+
+<div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Info principal -->
+  <div class="lg:col-span-2 space-y-5">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ course.title }}</h1>
+      {% if course.subtitle %}
+      <p class="text-[#9ca3af] mt-2 text-base">{{ course.subtitle }}</p>
+      {% endif %}
+    </div>
+
+    {% if course.description %}
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold text-white mb-2">📋 Descripción</h2>
+      <p class="text-sm text-[#9ca3af] leading-relaxed whitespace-pre-wrap">{{ course.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Contenido del curso -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold text-white mb-4">
+        🗂 Contenido del curso
+        <span class="text-[#4b5563] font-normal ml-2">{{ course.lesson_count }} lecciones</span>
+      </h2>
+      <div class="space-y-3">
+        {% for section in course.sections %}
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[10px] bg-[#252525] text-[#6b7280] px-2 py-0.5 rounded font-semibold uppercase tracking-wide">
+              📁 {{ section.title }}
+            </span>
+            <span class="text-[11px] text-[#4b5563]">{{ section.lessons | length }} lecciones</span>
+          </div>
+          <div class="space-y-1 ml-2">
+            {% for lesson in section.lessons %}
+            <div class="flex items-center gap-3 py-1.5 px-3 rounded-lg bg-[#141414]">
+              <span class="text-[#4b5563] text-xs">▶</span>
+              <span class="text-sm text-[#9ca3af] flex-1">{{ lesson.title }}</span>
+              {% if lesson.duration_min %}
+              <span class="text-[11px] text-[#4b5563]">{{ lesson.duration_min }} min</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <p class="text-sm text-[#4b5563]">El contenido se añadirá próximamente.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de compra / acceso -->
+  <div class="lg:col-span-1">
+    <div class="card p-5 sticky top-6">
+      {% if course.image %}
+      <div class="aspect-video bg-[#1e1e1e] rounded-lg overflow-hidden mb-4">
+        <img src="{{ course.image }}" alt="{{ course.title }}" class="w-full h-full object-cover"/>
+      </div>
+      {% endif %}
+
+      {% if course.is_free %}
+      <p class="text-2xl font-bold text-green-400 mb-1">Gratis</p>
+      {% else %}
+      <p class="text-2xl font-bold text-white mb-1">{{ '%.2f' % course.price }}€</p>
+      {% endif %}
+
+      <div class="flex items-center gap-3 text-xs text-[#4b5563] mb-4">
+        <span>🎬 {{ course.lesson_count }} lecciones</span>
+        {% if course.total_duration %}<span>⏱ {{ course.total_duration }} min</span>{% endif %}
+      </div>
+
+      {% if enrolled %}
+        <a href="{{ url_for('learn', course_id=course.id) }}"
+           class="btn btn-primary w-full justify-center">
+          ▶ Continuar curso
+        </a>
+      {% elif course.is_free %}
+        <form method="POST" action="{{ url_for('enroll_free', course_id=course.id) }}">
+          <button type="submit" class="btn btn-primary w-full justify-center">
+            Inscribirme gratis
+          </button>
+        </form>
+      {% else %}
+        <form method="POST" action="{{ url_for('checkout', course_id=course.id) }}">
+          <button type="submit" class="btn btn-primary w-full justify-center">
+            💳 Comprar — {{ '%.2f' % course.price }}€
+          </button>
+        </form>
+      {% endif %}
+
+      <p class="text-[11px] text-[#4b5563] text-center mt-3">Acceso de por vida al comprar</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

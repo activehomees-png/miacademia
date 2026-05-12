@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Clases en directo — Admin{% endblock %}
+{% block content_class %}max-w-4xl mx-auto{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-bold text-white">🎥 Clases en directo</h1>
+  <a href="{{ url_for('admin_new_live_class') }}" class="btn btn-primary">➕ Nueva clase</a>
+</div>
+
+{% if classes %}
+<div class="space-y-3">
+  {% for lc in classes %}
+  <div class="card p-4 flex items-center gap-4">
+    <div class="flex-shrink-0 text-center bg-[#1e1b4b] rounded-xl px-3 py-2 min-w-[56px]">
+      <p class="text-xs text-indigo-400 font-semibold">{{ lc.scheduled_at.strftime('%b').upper() }}</p>
+      <p class="text-xl font-bold text-white">{{ lc.scheduled_at.strftime('%d') }}</p>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-white text-sm">{{ lc.title }}</p>
+      <p class="text-xs text-indigo-400">{{ lc.scheduled_at.strftime('%H:%M') }} · {{ lc.duration_min }} min</p>
+      {% if lc.instructor %}<p class="text-xs text-[#4b5563]">👤 {{ lc.instructor }}</p>{% endif %}
+      {% if lc.meet_url %}
+      <a href="{{ lc.meet_url }}" target="_blank" class="text-xs text-indigo-400 hover:underline">🔗 {{ lc.meet_url[:40] }}...</a>
+      {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('admin_delete_live_class', class_id=lc.id) }}"
+          onsubmit="return confirm('¿Eliminar esta clase?')" class="flex-shrink-0">
+      <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-16 text-center">
+  <p class="text-4xl mb-3">📅</p>
+  <p class="text-[#6b7280]">No hay clases programadas.</p>
+  <a href="{{ url_for('admin_new_live_class') }}" class="btn btn-primary mt-4 inline-flex">Programar primera clase</a>
+</div>
+{% endif %}
+{% endblock %}
