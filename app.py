@@ -8,7 +8,7 @@ from flask_login import (LoginManager, login_user, logout_user,
                          login_required, current_user)
 
 from models import (db, User, Category, Post, Comment,
-                    Course, Section, Lesson, Enrollment, LessonProgress, LiveClass)
+                    Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass)
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -457,6 +457,30 @@ def admin_delete_lesson(lesson_id):
     db.session.delete(lesson)
     db.session.commit()
     flash('Lección eliminada.', 'success')
+    return redirect(url_for('admin_edit_course', course_id=course_id))
+
+@app.route('/admin/leccion/<int:lesson_id>/archivo', methods=['POST'])
+@login_required
+@admin_required
+def admin_add_lesson_file(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+    name = request.form.get('name', '').strip()
+    url  = request.form.get('url', '').strip()
+    if name and url:
+        db.session.add(LessonFile(lesson_id=lesson_id, name=name, url=url))
+        db.session.commit()
+        flash('Archivo añadido.', 'success')
+    return redirect(url_for('admin_edit_course', course_id=lesson.section.course_id))
+
+@app.route('/admin/archivo/<int:file_id>/borrar', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_lesson_file(file_id):
+    f = LessonFile.query.get_or_404(file_id)
+    course_id = f.lesson.section.course_id
+    db.session.delete(f)
+    db.session.commit()
+    flash('Archivo eliminado.', 'success')
     return redirect(url_for('admin_edit_course', course_id=course_id))
 
 @app.route('/admin/clases')

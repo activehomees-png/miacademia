@@ -120,6 +120,16 @@ class Lesson(db.Model):
     description  = db.Column(db.Text, default='')
     order        = db.Column(db.Integer, default=0)
     duration_min = db.Column(db.Integer, default=0)
+    files        = db.relationship('LessonFile', backref='lesson', lazy=True,
+                                   cascade='all, delete-orphan')
+
+
+class LessonFile(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    lesson_id  = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    name       = db.Column(db.String(200), nullable=False)
+    url        = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Enrollment(db.Model):

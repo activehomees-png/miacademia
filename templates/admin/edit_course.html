@@ -54,16 +54,37 @@
         </form>
       </div>
 
-      <div class="space-y-1 mb-3">
+      <div class="space-y-2 mb-3">
         {% for lesson in section.lessons %}
-        <div class="flex items-center gap-2 py-1.5 px-3 bg-[#fafafa] border border-[#f0f0f0] rounded-lg">
-          <span class="text-violet-400 text-xs">▶</span>
-          <span class="text-xs text-[#52525b] flex-1 truncate">{{ lesson.title }}</span>
-          {% if lesson.duration_min %}<span class="text-[10px] text-[#a1a1aa]">{{ lesson.duration_min }}m</span>{% endif %}
-          <form method="POST" action="{{ url_for('admin_delete_lesson', lesson_id=lesson.id) }}">
-            <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-red-500">✕</button>
-          </form>
-        </div>
+        <details class="bg-[#fafafa] border border-[#f0f0f0] rounded-lg overflow-hidden">
+          <summary class="flex items-center gap-2 py-1.5 px-3 cursor-pointer list-none hover:bg-[#f4f4f5] transition">
+            <span class="text-violet-400 text-xs">▶</span>
+            <span class="text-xs text-[#52525b] flex-1 truncate">{{ lesson.title }}</span>
+            {% if lesson.duration_min %}<span class="text-[10px] text-[#a1a1aa]">{{ lesson.duration_min }}m</span>{% endif %}
+            {% if lesson.files %}<span class="text-[10px] text-violet-500">📎 {{ lesson.files|length }}</span>{% endif %}
+            <form method="POST" action="{{ url_for('admin_delete_lesson', lesson_id=lesson.id) }}"
+                  onclick="event.stopPropagation()">
+              <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-red-500 ml-2">✕</button>
+            </form>
+          </summary>
+          <div class="px-3 pb-3 pt-2 border-t border-[#f0f0f0] space-y-2">
+            <p class="text-[10px] text-[#a1a1aa] font-semibold uppercase tracking-wide">Archivos adjuntos</p>
+            {% for file in lesson.files %}
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] text-[#52525b] flex-1 truncate">📄 {{ file.name }}</span>
+              <form method="POST" action="{{ url_for('admin_delete_lesson_file', file_id=file.id) }}">
+                <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-red-500">✕</button>
+              </form>
+            </div>
+            {% endfor %}
+            <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=lesson.id) }}"
+                  class="flex flex-col gap-1.5 mt-2">
+              <input type="text" name="name" class="input text-xs py-1" placeholder="Nombre del archivo" required/>
+              <input type="url"  name="url"  class="input text-xs py-1" placeholder="URL (Drive, Dropbox...)" required/>
+              <button type="submit" class="btn btn-primary btn-sm self-start text-xs">+ Añadir archivo</button>
+            </form>
+          </div>
+        </details>
         {% endfor %}
       </div>
 
