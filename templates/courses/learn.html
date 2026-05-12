@@ -10,10 +10,6 @@
 
     <!-- Header -->
     <div class="p-4 border-b border-[#e4e4e7]">
-      <a href="{{ url_for('course_detail', course_id=course.id) }}"
-         class="text-xs text-[#71717a] hover:text-[#18181b] inline-flex items-center gap-1 mb-2">
-        ← Volver al curso
-      </a>
       <h2 class="text-sm font-bold text-[#18181b] truncate">{{ course.title }}</h2>
 
       {% set total = course.lesson_count %}
