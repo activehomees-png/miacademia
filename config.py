@@ -1,7 +1,12 @@
 import os
 
-SECRET_KEY              = os.environ.get('SECRET_KEY', 'cambiar-en-produccion-secret-key-aqui')
-SQLALCHEMY_DATABASE_URI = 'sqlite:///academy.db'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'cambiar-en-produccion-secret-key-aqui')
+
+# Usar PostgreSQL en Railway, SQLite en local
+_db_url = os.environ.get('DATABASE_URL', 'sqlite:///academy.db')
+if _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+SQLALCHEMY_DATABASE_URI = _db_url
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', '')
