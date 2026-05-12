@@ -146,9 +146,15 @@
 
     <!-- Notifications bell -->
     <div class="relative" id="notif-wrap">
-      <button onclick="toggleNotifMenu()" class="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f4f4f5] transition" title="Notificaciones">
+      <button onclick="toggleNotifMenu()" title="Notificaciones"
+              style="position:relative;width:34px;height:34px;display:flex;align-items:center;
+                     justify-content:center;border-radius:50%;border:none;background:transparent;
+                     cursor:pointer;font-size:18px;">
         🔔
-        <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+        <span id="notif-badge"
+              style="display:none;position:absolute;top:-4px;right:-4px;width:18px;height:18px;
+                     background:#ef4444;color:#fff;font-size:10px;font-weight:700;
+                     border-radius:50%;align-items:center;justify-content:center;">0</span>
       </button>
       <div id="notif-menu" class="hidden absolute right-0 top-10 w-80 rounded-xl shadow-xl z-50 overflow-hidden"
            style="background:var(--surface);border:1px solid var(--border)">
@@ -241,9 +247,9 @@
       const badge = document.getElementById('notif-badge');
       if (data.unread > 0) {
         badge.textContent = data.unread > 9 ? '9+' : data.unread;
-        badge.classList.remove('hidden');
+        badge.style.display = 'flex';
       } else {
-        badge.classList.add('hidden');
+        badge.style.display = 'none';
       }
       const list = document.getElementById('notif-list');
       if (data.items.length === 0) {
