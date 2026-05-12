@@ -105,20 +105,36 @@
             <p class="text-[10px] text-[#a1a1aa]">Miembros</p>
           </div>
           <div class="text-center">
+            <p class="font-bold text-[#18181b] text-sm">{{ online_users | length }}</p>
+            <p class="text-[10px] text-[#a1a1aa]">Online</p>
+          </div>
+          <div class="text-center">
             <p class="font-bold text-[#18181b] text-sm">{{ admin_count }}</p>
             <p class="text-[10px] text-[#a1a1aa]">Admins</p>
           </div>
         </div>
 
-        <!-- Admin avatars -->
-        {% if admins %}
-        <div class="flex gap-1.5 mb-3">
-          {% for admin in admins %}
-          <div class="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center
-                      text-white text-[10px] font-bold" title="{{ admin.username }}">
-            {{ admin.initials }}
+        <!-- Online users -->
+        {% if online_users %}
+        <div class="border-t border-[#f4f4f5] pt-3 mb-3">
+          <p class="text-[10px] text-[#a1a1aa] font-semibold uppercase tracking-wide mb-2">🟢 Conectados ahora</p>
+          <div class="space-y-1.5">
+            {% for u in online_users %}
+            <div class="flex items-center gap-2">
+              <div class="relative flex-shrink-0">
+                {% if u.avatar_data %}
+                <img src="{{ url_for('serve_avatar', user_id=u.id) }}"
+                     class="w-6 h-6 rounded-full object-cover"/>
+                {% else %}
+                <div class="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center
+                            text-white text-[9px] font-bold">{{ u.initials }}</div>
+                {% endif %}
+                <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white"></span>
+              </div>
+              <span class="text-xs text-[#52525b] truncate">{{ u.username }}</span>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
         {% endif %}
 

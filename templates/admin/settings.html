@@ -6,7 +6,7 @@
 <h1 class="text-xl font-bold text-[#18181b] mb-6">⚙️ Ajustes de comunidad</h1>
 
 <div class="bg-white border border-[#e4e4e7] rounded-xl p-6 shadow-sm">
-  <form method="POST" class="space-y-5">
+  <form method="POST" enctype="multipart/form-data" class="space-y-5">
 
     <div>
       <label class="block text-xs font-medium text-[#71717a] mb-1">Nombre de la academia</label>
@@ -14,12 +14,13 @@
     </div>
 
     <div>
-      <label class="block text-xs font-medium text-[#71717a] mb-1">URL imagen de portada</label>
-      <input type="url" name="community_image" class="input" value="{{ s.community_image }}"
-             placeholder="https://... (imagen que aparece en el panel de comunidad)"/>
-      {% if s.community_image %}
-      <img src="{{ s.community_image }}" class="mt-2 h-24 rounded-lg object-cover"/>
+      <label class="block text-xs font-medium text-[#71717a] mb-1">Imagen de portada de la comunidad</label>
+      {% if s.community_image_data %}
+      <img src="{{ url_for('serve_banner') }}" class="mb-2 h-28 rounded-xl object-cover w-full"/>
       {% endif %}
+      <input type="file" name="community_image_file" class="input py-1.5"
+             accept="image/jpeg,image/png,image/webp,image/gif"/>
+      <p class="text-[11px] text-[#a1a1aa] mt-1">JPG, PNG o WebP. Aparece como banner en el panel de comunidad.</p>
     </div>
 
     <div>

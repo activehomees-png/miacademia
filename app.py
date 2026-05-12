@@ -49,6 +49,14 @@ def timeago(dt: datetime) -> str:
 
 app.jinja_env.filters['timeago'] = timeago
 
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        now = datetime.utcnow()
+        if not current_user.last_seen or (now - current_user.last_seen).total_seconds() > 60:
+            current_user.last_seen = now
+            db.session.commit()
+
 def get_settings():
     s = SiteSettings.query.first()
     if not s:
@@ -136,12 +144,15 @@ def community():
         q = q.filter_by(category_id=cat_id)
     posts      = q.limit(50).all()
     categories = Category.query.all()
-    member_count = User.query.count()
-    admin_count  = User.query.filter_by(role='admin').count()
-    admins       = User.query.filter_by(role='admin').limit(5).all()
+    five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+    member_count  = User.query.count()
+    admin_count   = User.query.filter_by(role='admin').count()
+    admins        = User.query.filter_by(role='admin').limit(5).all()
+    online_users  = User.query.filter(User.last_seen >= five_min_ago).order_by(User.last_seen.desc()).limit(20).all()
     return render_template('community/feed.html',
                            posts=posts, categories=categories, active_cat=cat_id,
-                           member_count=member_count, admin_count=admin_count, admins=admins)
+                           member_count=member_count, admin_count=admin_count,
+                           admins=admins, online_users=online_users)
 
 @app.route('/comunidad/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -359,6 +370,20 @@ def admin_dashboard():
     categories = Category.query.all()
     return render_template('admin/dashboard.html', stats=stats, categories=categories)
 
+@app.route('/avatar/<int:user_id>')
+def serve_avatar(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.avatar_data:
+        return send_file(io.BytesIO(user.avatar_data), mimetype=user.avatar_mime)
+    abort(404)
+
+@app.route('/comunidad/banner')
+def serve_banner():
+    s = get_settings()
+    if s.community_image_data:
+        return send_file(io.BytesIO(s.community_image_data), mimetype=s.community_image_mime)
+    abort(404)
+
 @app.route('/admin/ajustes', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -366,10 +391,15 @@ def admin_settings():
     s = get_settings()
     if request.method == 'POST':
         s.academy_name          = request.form.get('academy_name', s.academy_name).strip()
-        s.community_image       = request.form.get('community_image', '').strip()
         s.community_description = request.form.get('community_description', '').strip()
         s.link_url              = request.form.get('link_url', '').strip()
         s.link_text             = request.form.get('link_text', '').strip()
+        img = request.files.get('community_image_file')
+        if img and img.filename:
+            data = img.read()
+            s.community_image_data = data
+            s.community_image_mime = img.mimetype or 'image/jpeg'
+            s.community_image      = ''
         db.session.commit()
         flash('Ajustes guardados.', 'success')
         return redirect(url_for('admin_settings'))
@@ -632,13 +662,20 @@ def seed_db():
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
     db.create_all()
-    # Migrate lesson_file: switch from url-based to binary storage
     try:
         with db.engine.connect() as conn:
+            # lesson_file binary migration
             conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS data BYTEA"))
             conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS mimetype VARCHAR(100) DEFAULT 'application/octet-stream'"))
             conn.execute(text("ALTER TABLE lesson_file ADD COLUMN IF NOT EXISTS size INTEGER DEFAULT 0"))
             conn.execute(text("ALTER TABLE lesson_file DROP COLUMN IF EXISTS url"))
+            # user: last_seen + avatar
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP"))
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS avatar_data BYTEA"))
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
+            # site_settings: binary banner
+            conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_data BYTEA"))
+            conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
             conn.commit()
     except Exception:
         pass

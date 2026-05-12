@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     role         = db.Column(db.String(20), default='student')   # 'student' | 'admin'
     bio          = db.Column(db.Text, default='')
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen    = db.Column(db.DateTime, nullable=True)
+    avatar_data  = db.Column(db.LargeBinary, nullable=True)
+    avatar_mime  = db.Column(db.String(50), default='image/jpeg')
 
     posts        = db.relationship('Post',    backref='author', lazy=True)
     comments     = db.relationship('Comment', backref='author', lazy=True)
@@ -153,6 +156,8 @@ class SiteSettings(db.Model):
     id                    = db.Column(db.Integer, primary_key=True)
     academy_name          = db.Column(db.String(100), default='Mi Academia')
     community_image       = db.Column(db.String(500), default='')
+    community_image_data  = db.Column(db.LargeBinary, nullable=True)
+    community_image_mime  = db.Column(db.String(50), default='image/jpeg')
     community_description = db.Column(db.Text, default='')
     link_url              = db.Column(db.String(500), default='')
     link_text             = db.Column(db.String(200), default='¡Empieza por aquí!')
