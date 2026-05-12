@@ -201,10 +201,45 @@
 
         {% if current_user.is_admin %}
         <a href="{{ url_for('admin_settings') }}"
-           class="btn btn-secondary w-full justify-center text-xs">⚙️ Editar comunidad</a>
+           class="btn btn-secondary w-full justify-center text-xs mb-2">⚙️ Editar comunidad</a>
         {% endif %}
       </div>
     </div>
+
+    <!-- Mini leaderboard mensual -->
+    {% if top_month %}
+    <div class="bg-white border border-[#e4e4e7] rounded-xl overflow-hidden shadow-sm"
+         style="background:var(--surface);border-color:var(--border)">
+      <div class="px-4 pt-4 pb-2 flex items-center justify-between">
+        <p class="text-xs font-bold uppercase tracking-wide" style="color:var(--text3)">🏆 Top del mes</p>
+        <a href="{{ url_for('leaderboard') }}" class="text-[10px] text-violet-500 hover:text-violet-700">Ver todo</a>
+      </div>
+      <div class="px-3 pb-3 space-y-1">
+        {% for u, pts in top_month %}
+        {% set pos = loop.index %}
+        <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+             style="background:{% if pos==1 %}rgba(245,158,11,.08){% else %}transparent{% endif %}">
+          <span class="text-sm flex-shrink-0">
+            {% if pos==1 %}🥇{% elif pos==2 %}🥈{% elif pos==3 %}🥉{% else %}<span class="text-xs w-4 text-center" style="color:var(--text4)">{{ pos }}</span>{% endif %}
+          </span>
+          {% if u.avatar_data %}
+          <img src="{{ url_for('serve_avatar', user_id=u.id) }}"
+               class="w-6 h-6 rounded-full object-cover flex-shrink-0"/>
+          {% else %}
+          <div class="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center
+                      text-white text-[9px] font-bold flex-shrink-0">{{ u.initials }}</div>
+          {% endif %}
+          <span class="text-xs flex-1 truncate font-medium" style="color:var(--text1)">{{ u.username }}</span>
+          <span class="text-xs font-bold text-violet-600 flex-shrink-0">{{ pts }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="px-4 pb-3">
+        <a href="{{ url_for('leaderboard') }}" class="btn btn-secondary w-full justify-center text-xs">Ver clasificación completa</a>
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 
 </div>

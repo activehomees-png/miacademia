@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Clasificación{% endblock %}
+{% block content_class %}max-w-2xl mx-auto{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-bold" style="color:var(--text1)">🏆 Clasificación</h1>
+  <div class="text-xs font-medium" style="color:var(--text3)">
+    Tus puntos este periodo: <span class="text-violet-600 font-bold text-sm">{{ my_pts }} pts</span>
+  </div>
+</div>
+
+<!-- Period tabs -->
+<div class="flex gap-1 mb-6 p-1 rounded-xl" style="background:var(--hover-bg)">
+  {% for p, label in [('semanal','Semanal'),('mensual','Mensual'),('anual','Anual')] %}
+  <a href="{{ url_for('leaderboard', periodo=p) }}"
+     class="flex-1 text-center text-sm font-semibold py-2 rounded-lg transition"
+     style="{% if period==p %}background:var(--surface);color:#7c3aed;box-shadow:0 1px 3px rgba(0,0,0,.08){% else %}color:var(--text3){% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Points legend -->
+<div class="flex gap-3 mb-5">
+  {% for icon, label in [('📚','Lección +3'),('💬','Comentario +2'),('❤️','Reacción +1')] %}
+  <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+       style="background:var(--surface);border:1px solid var(--border);color:var(--text2)">
+    {{ icon }} {{ label }}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Ranking -->
+<div class="space-y-2">
+  {% for user, pts in ranking %}
+  {% set pos = loop.index %}
+  <div class="flex items-center gap-4 p-4 rounded-xl border transition"
+       style="background:var(--surface);border-color:{% if pos==1 %}#f59e0b{% elif pos==2 %}#9ca3af{% elif pos==3 %}#b45309{% else %}var(--border){% endif %}">
+
+    <!-- Position -->
+    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
+      {% if pos==1 %}bg-amber-100 text-amber-600
+      {% elif pos==2 %}bg-gray-100 text-gray-500
+      {% elif pos==3 %}bg-orange-100 text-orange-600
+      {% else %}text-xs{% endif %}"
+      style="{% if pos > 3 %}background:var(--hover-bg);color:var(--text3){% endif %}">
+      {% if pos == 1 %}🥇{% elif pos == 2 %}🥈{% elif pos == 3 %}🥉{% else %}{{ pos }}{% endif %}
+    </div>
+
+    <!-- Avatar -->
+    {% if user.avatar_data %}
+    <img src="{{ url_for('serve_avatar', user_id=user.id) }}"
+         class="w-10 h-10 rounded-full object-cover flex-shrink-0"/>
+    {% else %}
+    <div class="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center
+                text-white text-sm font-bold flex-shrink-0">{{ user.initials }}</div>
+    {% endif %}
+
+    <!-- Name -->
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-sm" style="color:var(--text1)">{{ user.username }}</p>
+      {% if user.is_admin %}
+      <p class="text-[10px] text-violet-500 font-semibold">Admin</p>
+      {% endif %}
+    </div>
+
+    <!-- Points -->
+    <div class="text-right flex-shrink-0">
+      <p class="font-bold text-violet-600 text-base">{{ pts }}</p>
+      <p class="text-[10px]" style="color:var(--text4)">puntos</p>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-16" style="color:var(--text3)">
+    <p class="text-4xl mb-3">🏆</p>
+    <p class="font-medium">Nadie ha ganado puntos todavía en este periodo.</p>
+    <p class="text-sm mt-1">¡Completa lecciones, comenta y reacciona para aparecer aquí!</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

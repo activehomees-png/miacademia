@@ -163,6 +163,15 @@ class SiteSettings(db.Model):
     link_text             = db.Column(db.String(200), default='¡Empieza por aquí!')
 
 
+class PointEvent(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    points     = db.Column(db.Integer, default=0)
+    reason     = db.Column(db.String(50))   # 'lesson' | 'comment' | 'like'
+    ref_id     = db.Column(db.Integer)      # id of lesson/comment/post
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class LiveClass(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     title        = db.Column(db.String(200), nullable=False)

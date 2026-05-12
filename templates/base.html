@@ -125,6 +125,10 @@
        class="tab-link {% if request.endpoint=='calendar' %}active{% endif %}">
       Clases en directo
     </a>
+    <a href="{{ url_for('leaderboard') }}"
+       class="tab-link {% if request.endpoint=='leaderboard' %}active{% endif %}">
+      🏆 Clasificación
+    </a>
     {% if current_user.is_admin %}
     <a href="{{ url_for('admin_dashboard') }}"
        class="tab-link {% if 'admin' in (request.endpoint or '') %}active{% endif %}">

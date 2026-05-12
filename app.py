@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
                     Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass,
-                    SiteSettings)
+                    SiteSettings, PointEvent)
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -56,6 +56,26 @@ def update_last_seen():
         if not current_user.last_seen or (now - current_user.last_seen).total_seconds() > 60:
             current_user.last_seen = now
             db.session.commit()
+
+def award_points(user_id, reason, ref_id, pts):
+    if not PointEvent.query.filter_by(user_id=user_id, reason=reason, ref_id=ref_id).first():
+        db.session.add(PointEvent(user_id=user_id, points=pts, reason=reason, ref_id=ref_id))
+        db.session.commit()
+
+def get_leaderboard(since=None):
+    q = PointEvent.query
+    if since:
+        q = q.filter(PointEvent.created_at >= since)
+    rows = q.all()
+    totals = {}
+    for e in rows:
+        totals[e.user_id] = totals.get(e.user_id, 0) + e.points
+    result = []
+    for uid, pts in sorted(totals.items(), key=lambda x: x[1], reverse=True)[:10]:
+        u = User.query.get(uid)
+        if u:
+            result.append((u, pts))
+    return result
 
 def get_settings():
     s = SiteSettings.query.first()
@@ -144,15 +164,17 @@ def community():
         q = q.filter_by(category_id=cat_id)
     posts      = q.limit(50).all()
     categories = Category.query.all()
-    five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+    five_min_ago  = datetime.utcnow() - timedelta(minutes=5)
+    month_start   = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0)
     member_count  = User.query.count()
     admin_count   = User.query.filter_by(role='admin').count()
     admins        = User.query.filter_by(role='admin').limit(5).all()
     online_users  = User.query.filter(User.last_seen >= five_min_ago).order_by(User.last_seen.desc()).limit(20).all()
+    top_month     = get_leaderboard(since=month_start)[:5]
     return render_template('community/feed.html',
                            posts=posts, categories=categories, active_cat=cat_id,
                            member_count=member_count, admin_count=admin_count,
-                           admins=admins, online_users=online_users)
+                           admins=admins, online_users=online_users, top_month=top_month)
 
 @app.route('/comunidad/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -195,6 +217,7 @@ def add_comment_ajax(post_id):
     c = Comment(post_id=post_id, user_id=current_user.id, content=content)
     db.session.add(c)
     db.session.commit()
+    award_points(current_user.id, 'comment', c.id, 2)
     return jsonify({'ok': True, 'username': current_user.username,
                     'initials': current_user.initials, 'content': content,
                     'timeago': 'ahora mismo'})
@@ -209,6 +232,7 @@ def like_post(post_id):
     else:
         post.likes.append(current_user)
         liked = True
+        award_points(current_user.id, 'like', post.id, 1)
     db.session.commit()
     return jsonify({'likes': len(post.likes), 'liked': liked})
 
@@ -284,7 +308,25 @@ def complete_lesson(course_id, lesson_id):
     if not LessonProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first():
         db.session.add(LessonProgress(user_id=current_user.id, lesson_id=lesson_id))
         db.session.commit()
+        award_points(current_user.id, 'lesson', lesson_id, 3)
     return jsonify({'ok': True})
+
+# ── LEADERBOARD ───────────────────────────────────────────────────────────────
+
+@app.route('/clasificacion')
+@login_required
+def leaderboard():
+    now = datetime.utcnow()
+    period = request.args.get('periodo', 'mensual')
+    if period == 'semanal':
+        since = now - timedelta(weeks=1)
+    elif period == 'anual':
+        since = now.replace(month=1, day=1, hour=0, minute=0, second=0)
+    else:
+        since = now.replace(day=1, hour=0, minute=0, second=0)
+    ranking = get_leaderboard(since=since)
+    my_pts  = sum(e.points for e in PointEvent.query.filter_by(user_id=current_user.id).filter(PointEvent.created_at >= since).all())
+    return render_template('leaderboard.html', ranking=ranking, period=period, my_pts=my_pts)
 
 # ── CALENDAR ──────────────────────────────────────────────────────────────────
 
@@ -690,6 +732,9 @@ with app.app_context():
             # site_settings: binary banner
             conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_data BYTEA"))
             conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
+            # point_event table (created by db.create_all, but add index hint)
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_user ON point_event(user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_date ON point_event(created_at)"))
             conn.commit()
     except Exception:
         pass
