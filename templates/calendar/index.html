@@ -58,13 +58,13 @@
             📅 {{ lc.scheduled_at.strftime('%d %b · %H:%M') }}
           </p>
           {% if lc.instructor %}
-          <p class="text-xs mt-0.5" style="color:var(--text2)">👤 {{ lc.instructor }}</p>
+          <p class="text-xs mt-0.5" style="color:#18181b">👤 {{ lc.instructor }}</p>
           {% endif %}
           {% if lc.duration_min %}
-          <p class="text-xs" style="color:var(--text3)">⏱ {{ lc.duration_min }} min</p>
+          <p class="text-xs" style="color:#18181b">⏱ {{ lc.duration_min }} min</p>
           {% endif %}
           {% if lc.description %}
-          <p class="text-xs mt-1 leading-relaxed" style="color:var(--text2)">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
+          <p class="text-xs mt-1 leading-relaxed" style="color:#18181b">{{ lc.description[:80] }}{% if lc.description|length > 80 %}...{% endif %}</p>
           {% endif %}
           {% if lc.meet_url %}
           <a href="{{ lc.meet_url }}" target="_blank"
