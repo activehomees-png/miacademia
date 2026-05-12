@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
                     Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass,
-                    SiteSettings, PointEvent)
+                    SiteSettings, PointEvent, Notification)
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -49,12 +49,32 @@ def timeago(dt: datetime) -> str:
 
 app.jinja_env.filters['timeago'] = timeago
 
+def notify(user_id, type_, message, link=''):
+    db.session.add(Notification(user_id=user_id, type=type_, message=message, link=link))
+
 @app.before_request
 def update_last_seen():
     if current_user.is_authenticated:
         now = datetime.utcnow()
         if not current_user.last_seen or (now - current_user.last_seen).total_seconds() > 60:
             current_user.last_seen = now
+            # Check for classes starting in the next 24h without a reminder yet
+            try:
+                window_start = now + timedelta(hours=1)
+                window_end   = now + timedelta(hours=25)
+                upcoming = LiveClass.query.filter(
+                    LiveClass.scheduled_at >= window_start,
+                    LiveClass.scheduled_at <= window_end
+                ).all()
+                for lc in upcoming:
+                    exists = Notification.query.filter_by(
+                        user_id=current_user.id, type='class_reminder', link=f'/calendario'
+                    ).filter(Notification.message.contains(lc.title)).first()
+                    if not exists:
+                        notify(current_user.id, 'class_reminder',
+                               f'🔔 "{lc.title}" empieza en menos de 24 horas', '/calendario')
+            except Exception:
+                pass
             db.session.commit()
 
 def award_points(user_id, reason, ref_id, pts):
@@ -151,6 +171,32 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/notificaciones/datos')
+@login_required
+def notifications_data():
+    notifs = Notification.query.filter_by(user_id=current_user.id)\
+        .order_by(Notification.created_at.desc()).limit(20).all()
+    unread = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+    return jsonify({
+        'unread': unread,
+        'items': [{'id': n.id, 'message': n.message, 'link': n.link,
+                   'is_read': n.is_read, 'created_at': n.created_at.strftime('%d %b %H:%M')}
+                  for n in notifs]
+    })
+
+@app.route('/notificaciones/leer', methods=['POST'])
+@login_required
+def notifications_read():
+    nid = request.json.get('id')
+    if nid:
+        n = Notification.query.filter_by(id=nid, user_id=current_user.id).first()
+        if n: n.is_read = True
+    else:
+        Notification.query.filter_by(user_id=current_user.id, is_read=False)\
+            .update({'is_read': True})
+    db.session.commit()
+    return jsonify({'ok': True})
 
 @app.route('/cuenta', methods=['GET', 'POST'])
 @login_required
@@ -274,6 +320,11 @@ def add_comment_ajax(post_id):
     db.session.add(c)
     db.session.commit()
     award_points(current_user.id, 'comment', c.id, 2)
+    if post.user_id != current_user.id:
+        notify(post.user_id, 'comment',
+               f'💬 {current_user.username} comentó en tu post "{post.title[:50]}"',
+               f'/comunidad')
+        db.session.commit()
     return jsonify({'ok': True, 'username': current_user.username,
                     'initials': current_user.initials, 'content': content,
                     'timeago': 'ahora mismo'})
@@ -738,6 +789,13 @@ def admin_new_live_class():
                 ))
 
         db.session.commit()
+        # Notify all users about the new class
+        all_users = User.query.filter_by(role='student').all()
+        for u in all_users:
+            notify(u.id, 'new_class',
+                   f'📅 Nueva clase programada: "{lc.title}" el {lc.scheduled_at.strftime("%d %b a las %H:%M")}',
+                   '/calendario')
+        db.session.commit()
         label = {'weekly': 'semanal', 'monthly': 'mensual'}.get(recurrence, '')
         flash(f'Clase programada{"  (recurrencia " + label + ")" if label else ""}.', 'success')
         return redirect(url_for('admin_live_classes'))
@@ -867,6 +925,17 @@ with app.app_context():
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_date ON point_event(created_at)"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS recurrence VARCHAR(10) DEFAULT 'none'"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES live_class(id)"))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS notification (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES \"user\"(id),
+                    type VARCHAR(30),
+                    message VARCHAR(300),
+                    link VARCHAR(200) DEFAULT '',
+                    is_read BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
             conn.commit()
     except Exception:
         pass

@@ -172,6 +172,16 @@ class PointEvent(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class Notification(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type       = db.Column(db.String(30))  # 'new_class' | 'class_reminder' | 'comment'
+    message    = db.Column(db.String(300))
+    link       = db.Column(db.String(200), default='')
+    is_read    = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class LiveClass(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     title        = db.Column(db.String(200), nullable=False)

@@ -144,6 +144,24 @@
       <span id="theme-icon">☀️</span>
     </button>
 
+    <!-- Notifications bell -->
+    <div class="relative" id="notif-wrap">
+      <button onclick="toggleNotifMenu()" class="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f4f4f5] transition" title="Notificaciones">
+        🔔
+        <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+      </button>
+      <div id="notif-menu" class="hidden absolute right-0 top-10 w-80 rounded-xl shadow-xl z-50 overflow-hidden"
+           style="background:var(--surface);border:1px solid var(--border)">
+        <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid var(--border)">
+          <span class="text-sm font-bold" style="color:var(--text1)">Notificaciones</span>
+          <button onclick="markAllRead()" class="text-xs text-violet-500 hover:text-violet-700">Marcar todo leído</button>
+        </div>
+        <div id="notif-list" class="overflow-y-auto max-h-80">
+          <p class="text-xs text-center py-6" style="color:var(--text4)">Sin notificaciones</p>
+        </div>
+      </div>
+    </div>
+
     <div class="relative" id="user-menu-wrap">
       <button onclick="toggleUserMenu()" class="flex items-center gap-2 ml-1 cursor-pointer">
         <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
@@ -212,12 +230,70 @@
 
   function toggleUserMenu() {
     document.getElementById('user-menu').classList.toggle('hidden');
+    document.getElementById('notif-menu').classList.add('hidden');
   }
+
+  // ── Notifications ──
+  async function loadNotifications() {
+    try {
+      const r = await fetch('/notificaciones/datos');
+      const data = await r.json();
+      const badge = document.getElementById('notif-badge');
+      if (data.unread > 0) {
+        badge.textContent = data.unread > 9 ? '9+' : data.unread;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+      const list = document.getElementById('notif-list');
+      if (data.items.length === 0) {
+        list.innerHTML = '<p class="text-xs text-center py-6" style="color:var(--text4)">Sin notificaciones</p>';
+        return;
+      }
+      list.innerHTML = data.items.map(n => `
+        <div onclick="readNotif(${n.id}, '${n.link}')"
+             class="flex gap-3 px-4 py-3 cursor-pointer transition hover:bg-[#f4f4f5] ${n.is_read ? '' : 'bg-violet-50'}"
+             style="border-bottom:1px solid var(--border)">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs leading-snug" style="color:var(--text1)">${n.message}</p>
+            <p class="text-[10px] mt-0.5" style="color:var(--text4)">${n.created_at}</p>
+          </div>
+          ${!n.is_read ? '<div class="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0 mt-1"></div>' : ''}
+        </div>`).join('');
+    } catch(e) {}
+  }
+
+  async function readNotif(id, link) {
+    await fetch('/notificaciones/leer', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id})});
+    document.getElementById('notif-menu').classList.add('hidden');
+    if (link) window.location.href = link;
+    else loadNotifications();
+  }
+
+  async function markAllRead() {
+    await fetch('/notificaciones/leer', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+    loadNotifications();
+  }
+
+  function toggleNotifMenu() {
+    const menu = document.getElementById('notif-menu');
+    menu.classList.toggle('hidden');
+    document.getElementById('user-menu').classList.add('hidden');
+    if (!menu.classList.contains('hidden')) loadNotifications();
+  }
+
   document.addEventListener('click', function(e) {
-    const wrap = document.getElementById('user-menu-wrap');
-    if (wrap && !wrap.contains(e.target))
+    const userWrap  = document.getElementById('user-menu-wrap');
+    const notifWrap = document.getElementById('notif-wrap');
+    if (userWrap && !userWrap.contains(e.target))
       document.getElementById('user-menu').classList.add('hidden');
+    if (notifWrap && !notifWrap.contains(e.target))
+      document.getElementById('notif-menu').classList.add('hidden');
   });
+
+  // Poll badge every 60s
+  loadNotifications();
+  setInterval(loadNotifications, 60000);
 </script>
 
 {% block scripts %}{% endblock %}
