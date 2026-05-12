@@ -739,6 +739,14 @@ with app.app_context():
     except Exception:
         pass
     seed_db()
+    # Backfill points for existing lesson completions and comments
+    for lp in LessonProgress.query.all():
+        if not PointEvent.query.filter_by(user_id=lp.user_id, reason='lesson', ref_id=lp.lesson_id).first():
+            db.session.add(PointEvent(user_id=lp.user_id, points=3, reason='lesson', ref_id=lp.lesson_id, created_at=lp.completed_at))
+    for c in Comment.query.all():
+        if not PointEvent.query.filter_by(user_id=c.user_id, reason='comment', ref_id=c.id).first():
+            db.session.add(PointEvent(user_id=c.user_id, points=2, reason='comment', ref_id=c.id, created_at=c.created_at))
+    db.session.commit()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))

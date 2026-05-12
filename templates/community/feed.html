@@ -207,7 +207,7 @@
     </div>
 
     <!-- Mini leaderboard mensual -->
-    {% if top_month %}
+    {% if True %}
     <div class="bg-white border border-[#e4e4e7] rounded-xl overflow-hidden shadow-sm"
          style="background:var(--surface);border-color:var(--border)">
       <div class="px-4 pt-4 pb-2 flex items-center justify-between">
@@ -230,8 +230,12 @@
                       text-white text-[9px] font-bold flex-shrink-0">{{ u.initials }}</div>
           {% endif %}
           <span class="text-xs flex-1 truncate font-medium" style="color:var(--text1)">{{ u.username }}</span>
-          <span class="text-xs font-bold text-violet-600 flex-shrink-0">{{ pts }}</span>
+          <span class="text-xs font-bold text-violet-600 flex-shrink-0">{{ pts }} pts</span>
         </div>
+        {% else %}
+        <p class="text-xs text-center py-3" style="color:var(--text4)">
+          ¡Completa lecciones y comenta para aparecer aquí!
+        </p>
         {% endfor %}
       </div>
       <div class="px-4 pb-3">
