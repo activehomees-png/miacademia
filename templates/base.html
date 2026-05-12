@@ -1,43 +1,103 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" id="html-root">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>{% block title %}Academia{% endblock %}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body { background:#f4f4f5; color:#18181b; font-family:'Segoe UI',system-ui,sans-serif; margin:0; }
+  /* ── Light theme (default) ── */
+  :root {
+    --bg:       #f4f4f5;
+    --surface:  #ffffff;
+    --border:   #e4e4e7;
+    --border2:  #d4d4d8;
+    --text1:    #18181b;
+    --text2:    #52525b;
+    --text3:    #71717a;
+    --text4:    #a1a1aa;
+    --hover-bg: #f4f4f5;
+    --input-bg: #ffffff;
+    --faint:    #fafafa;
+    --tab-active: #18181b;
+  }
 
+  /* ── Dark theme ── */
+  html.dark {
+    --bg:       #0f0f10;
+    --surface:  #1c1c1f;
+    --border:   #2e2e32;
+    --border2:  #3f3f46;
+    --text1:    #fafafa;
+    --text2:    #d4d4d8;
+    --text3:    #a1a1aa;
+    --text4:    #71717a;
+    --hover-bg: #27272a;
+    --input-bg: #27272a;
+    --faint:    #18181b;
+    --tab-active: #ffffff;
+  }
+
+  body { background:var(--bg); color:var(--text1);
+         font-family:'Segoe UI',system-ui,sans-serif; margin:0; transition:background .2s,color .2s; }
+
+  /* Header */
+  header { background:var(--surface) !important; border-color:var(--border) !important; }
+  header span, header a { color:var(--text1); }
+
+  /* Tab links */
   .tab-link { display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
-              font-size:13.5px; font-weight:500; color:#71717a; text-decoration:none;
+              font-size:13.5px; font-weight:500; color:var(--text3); text-decoration:none;
               border-bottom:2px solid transparent; transition:all .15s; white-space:nowrap; }
-  .tab-link:hover  { color:#18181b; }
-  .tab-link.active { color:#18181b; font-weight:700; border-bottom-color:#18181b; }
+  .tab-link:hover  { color:var(--text1); }
+  .tab-link.active { color:var(--tab-active); font-weight:700; border-bottom-color:var(--tab-active); }
 
-  .card  { background:#fff; border:1px solid #e4e4e7; border-radius:12px; }
-  .input { background:#fff; border:1px solid #d4d4d8; border-radius:8px;
-           padding:10px 14px; color:#18181b; font-size:14px; width:100%;
+  /* Cards / surfaces */
+  .card, .bg-white  { background:var(--surface) !important; }
+  [class*="border-[#e4e4e7]"] { border-color:var(--border) !important; }
+  [class*="border-[#f0f0f0]"] { border-color:var(--border) !important; }
+  [class*="border-[#f4f4f5]"] { border-color:var(--border) !important; }
+  [class*="bg-\[#fafafa\]"]   { background:var(--faint) !important; }
+  [class*="bg-\[#f4f4f5\]"]   { background:var(--hover-bg) !important; }
+  [class*="text-\[#18181b\]"] { color:var(--text1) !important; }
+  [class*="text-\[#52525b\]"] { color:var(--text2) !important; }
+  [class*="text-\[#71717a\]"] { color:var(--text3) !important; }
+  [class*="text-\[#a1a1aa\]"] { color:var(--text4) !important; }
+
+  /* Inputs */
+  .input { background:var(--input-bg); border:1px solid var(--border2); border-radius:8px;
+           padding:10px 14px; color:var(--text1); font-size:14px; width:100%;
            outline:none; box-sizing:border-box; }
   .input:focus { border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.1); }
   textarea.input { resize:vertical; min-height:90px; }
 
+  /* Buttons */
   .btn  { display:inline-flex; align-items:center; gap:6px; padding:8px 16px;
           border-radius:8px; font-size:13.5px; font-weight:600; border:none;
           cursor:pointer; transition:all .15s; text-decoration:none; }
-  .btn-primary   { background:#7c3aed; color:#fff; }
+  .btn-primary         { background:#7c3aed; color:#fff; }
   .btn-primary:hover   { background:#6d28d9; }
-  .btn-secondary { background:#f4f4f5; color:#52525b; border:1px solid #e4e4e7; }
-  .btn-secondary:hover { background:#e4e4e7; color:#18181b; }
-  .btn-danger    { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .btn-secondary       { background:var(--hover-bg); color:var(--text2); border:1px solid var(--border); }
+  .btn-secondary:hover { background:var(--border); color:var(--text1); }
+  .btn-danger          { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
   .btn-danger:hover    { background:#fee2e2; }
   .btn-sm { padding:5px 11px; font-size:12px; }
 
-  .badge { display:inline-block; padding:2px 9px; border-radius:999px;
-           font-size:11px; font-weight:600; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600; }
+
+  /* Theme toggle button */
+  #theme-toggle { width:34px; height:34px; border-radius:50%; border:1px solid var(--border);
+                  background:var(--hover-bg); cursor:pointer; display:flex; align-items:center;
+                  justify-content:center; font-size:16px; transition:all .2s; flex-shrink:0; }
+  #theme-toggle:hover { background:var(--border); }
 
   ::-webkit-scrollbar { width:4px; }
-  ::-webkit-scrollbar-thumb { background:#d4d4d8; border-radius:3px; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
 </style>
+<!-- Apply saved theme before render to avoid flash -->
+<script>
+  if (localStorage.getItem('theme') === 'dark') document.getElementById('html-root').classList.add('dark');
+</script>
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -48,7 +108,7 @@
   <!-- Logo -->
   <a href="{{ url_for('community') }}" class="flex items-center gap-2 flex-shrink-0 mr-2">
     <span class="text-xl">🎓</span>
-    <span class="font-bold text-[#18181b] text-sm">{{ site.academy_name }}</span>
+    <span class="font-bold text-sm" style="color:var(--text1)">{{ site.academy_name }}</span>
   </a>
 
   <!-- Nav tabs -->
@@ -73,17 +133,22 @@
     {% endif %}
   </nav>
 
-  <!-- User area -->
-  <div class="flex items-center gap-3 flex-shrink-0">
-    <div class="flex items-center gap-2">
+  <!-- User area + theme toggle -->
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <!-- Theme toggle -->
+    <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+      <span id="theme-icon">☀️</span>
+    </button>
+
+    <div class="flex items-center gap-2 ml-1">
       <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center
                   text-white text-xs font-bold">
         {{ current_user.initials }}
       </div>
-      <span class="text-sm font-medium text-[#18181b] hidden sm:block">{{ current_user.username }}</span>
+      <span class="text-sm font-medium hidden sm:block" style="color:var(--text1)">{{ current_user.username }}</span>
     </div>
     <a href="{{ url_for('logout') }}"
-       class="text-xs text-[#a1a1aa] hover:text-[#18181b] transition hidden sm:block">Salir</a>
+       class="text-xs transition hidden sm:block" style="color:var(--text4)">Salir</a>
   </div>
 </header>
 
@@ -108,6 +173,25 @@
     {% block content %}{% endblock %}
   </div>
 </main>
+
+<script>
+  const html = document.getElementById('html-root');
+  const icon = document.getElementById('theme-icon');
+
+  function applyTheme(dark) {
+    html.classList.toggle('dark', dark);
+    icon.textContent = dark ? '🌙' : '☀️';
+  }
+
+  function toggleTheme() {
+    const isDark = !html.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    applyTheme(isDark);
+  }
+
+  // Set correct icon on load
+  applyTheme(html.classList.contains('dark'));
+</script>
 
 {% block scripts %}{% endblock %}
 </body>
