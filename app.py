@@ -775,6 +775,10 @@ def seed_db():
         admin = User(username='admin', email='admin@academia.com', role='admin')
         admin.set_password('admin123')
         db.session.add(admin)
+    if not User.query.filter_by(username='alumno').first():
+        student = User(username='alumno', email='alumno@academia.com', role='student')
+        student.set_password('alumno123')
+        db.session.add(student)
     if not Category.query.first():
         for name, color, emoji in [
             ('General',   '#6366f1', '💬'),
