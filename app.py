@@ -982,6 +982,12 @@ def seed_db():
     if s.academy_name == 'Mi Academia':
         s.academy_name = 'Marca Atractora'
     db.session.commit()
+    # Promote specific user to admin
+    samuel = User.query.filter_by(email='samuelgavilant@gmail.com').first()
+    if samuel:
+        samuel.role = 'admin'
+        samuel.status = 'active'
+        db.session.commit()
     if not User.query.filter_by(role='admin').first():
         admin = User(username='admin', email='admin@academia.com', role='admin')
         admin.set_password('admin123')
