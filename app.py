@@ -7,6 +7,7 @@ from flask import (Flask, render_template, redirect, url_for,
                    request, flash, jsonify, abort, send_file)
 from flask_login import (LoginManager, login_user, logout_user,
                          login_required, current_user)
+from flask_mail import Mail, Message as MailMessage
 from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
@@ -17,6 +18,7 @@ app = Flask(__name__)
 app.config.from_pyfile('config.py')
 
 db.init_app(app)
+mail = Mail(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -901,6 +903,54 @@ def admin_reject_user(user_id):
     db.session.commit()
     flash(f'{user.username} ha sido rechazado.', 'success')
     return redirect(url_for('admin_users'))
+
+@app.route('/admin/email', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_email():
+    if request.method == 'POST':
+        subject = request.form.get('subject', '').strip()
+        body    = request.form.get('body', '').strip()
+        target  = request.form.get('target', 'students')
+        if not subject or not body:
+            flash('El asunto y el mensaje son obligatorios.', 'error')
+            return redirect(url_for('admin_email'))
+        if not app.config.get('MAIL_USERNAME'):
+            flash('Email no configurado. Añade MAIL_USERNAME y MAIL_PASSWORD en las variables de entorno de Railway.', 'error')
+            return redirect(url_for('admin_email'))
+        if target == 'all':
+            users = User.query.filter_by(status='active').all()
+        else:
+            users = User.query.filter_by(status='active', role='student').all()
+        try:
+            for user in users:
+                msg = MailMessage(
+                    subject=subject,
+                    recipients=[user.email],
+                    html=f"""
+                    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+                      <div style="background:#7c3aed;padding:24px;border-radius:12px 12px 0 0;text-align:center">
+                        <h1 style="color:#fff;margin:0;font-size:20px">🎓 Marca Atractora</h1>
+                      </div>
+                      <div style="background:#fff;padding:32px;border:1px solid #e4e4e7;border-top:none;border-radius:0 0 12px 12px">
+                        <h2 style="color:#18181b;margin-top:0">{subject}</h2>
+                        <div style="color:#52525b;line-height:1.7;white-space:pre-wrap">{body}</div>
+                        <hr style="border:none;border-top:1px solid #f4f4f5;margin:24px 0"/>
+                        <p style="color:#a1a1aa;font-size:12px;margin:0">
+                          Estás recibiendo este email porque eres miembro de Marca Atractora.
+                        </p>
+                      </div>
+                    </div>
+                    """
+                )
+                mail.send(msg)
+            flash(f'✅ Email enviado a {len(users)} persona{"s" if len(users) != 1 else ""}.', 'success')
+        except Exception as e:
+            flash(f'Error al enviar el email: {str(e)}', 'error')
+        return redirect(url_for('admin_email'))
+    total_students = User.query.filter_by(status='active', role='student').count()
+    total_all      = User.query.filter_by(status='active').count()
+    return render_template('admin/email.html', total_students=total_students, total_all=total_all)
 
 @app.route('/admin/usuarios/<int:user_id>/rol', methods=['POST'])
 @login_required

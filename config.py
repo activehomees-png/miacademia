@@ -16,3 +16,11 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
 ACADEMY_NAME = os.environ.get('ACADEMY_NAME', 'Marca Atractora')
+
+# Email (configurar en Railway con variables de entorno)
+MAIL_SERVER   = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+MAIL_PORT     = int(os.environ.get('MAIL_PORT', 587))
+MAIL_USE_TLS  = True
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME', '')
