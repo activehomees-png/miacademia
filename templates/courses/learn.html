@@ -129,10 +129,10 @@
         </div>
       </div>
 
-      <!-- Description -->
+      <!-- Description (rich HTML) -->
       {% if current_lesson.description %}
-      <div class="p-5 border-b border-[#f4f4f5]">
-        <p class="text-sm text-[#52525b] leading-relaxed whitespace-pre-wrap">{{ current_lesson.description }}</p>
+      <div class="p-5 border-b border-[#f4f4f5] prose prose-sm max-w-none lesson-description">
+        {{ current_lesson.description | safe }}
       </div>
       {% endif %}
 
@@ -154,11 +154,29 @@
       </div>
       {% endif %}
 
-      <!-- Admin: add files -->
+      <!-- Admin panel -->
       {% if current_user.is_admin %}
-      <div class="p-5 bg-[#fafafa] border-t border-[#f4f4f5]">
+      <div class="p-5 bg-[#fafafa] border-t border-[#f4f4f5] space-y-4">
+
+        <!-- Edit description -->
+        <details id="desc-panel">
+          <summary class="text-violet-600 cursor-pointer hover:text-violet-700 font-medium text-xs select-none">
+            ✏️ Admin: editar descripción / contenido
+          </summary>
+          <div class="mt-3">
+            <form method="POST" action="{{ url_for('admin_save_lesson_description', lesson_id=current_lesson.id) }}">
+              <textarea id="lesson-description" name="description"
+                        class="w-full border border-[#e4e4e7] rounded-lg p-2 text-sm min-h-[200px]">{{ current_lesson.description }}</textarea>
+              <div class="flex justify-end mt-2">
+                <button type="submit" class="btn btn-primary btn-sm">💾 Guardar descripción</button>
+              </div>
+            </form>
+          </div>
+        </details>
+
+        <!-- Add file attachment -->
         <details class="text-xs">
-          <summary class="text-violet-600 cursor-pointer hover:text-violet-700 font-medium">⚙ Admin: gestionar archivos adjuntos</summary>
+          <summary class="text-violet-600 cursor-pointer hover:text-violet-700 font-medium">📎 Admin: gestionar archivos adjuntos</summary>
           <div class="mt-3 space-y-3">
             {% if current_lesson.files %}
             <div class="space-y-1">
@@ -271,4 +289,74 @@ const _timer = setInterval(() => {
 }, 1000);
 {% endif %}
 </script>
+
+{% if current_user.is_admin and current_lesson %}
+<!-- TinyMCE rich text editor for lesson description -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+tinymce.init({
+  selector: '#lesson-description',
+  language: 'es',
+  height: 400,
+  menubar: false,
+  plugins: 'lists link image media table code emoticons',
+  toolbar:
+    'undo redo | blocks | bold italic underline | forecolor backcolor | ' +
+    'alignleft aligncenter alignright | bullist numlist | ' +
+    'link image media | table emoticons | code',
+  images_upload_url: '{{ url_for("admin_upload_lesson_image", lesson_id=current_lesson.id) }}',
+  images_upload_credentials: true,
+  automatic_uploads: true,
+  file_picker_types: 'image',
+  image_advtab: true,
+  content_style: `
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           font-size: 14px; color: #52525b; line-height: 1.7; padding: 12px; }
+    img  { max-width: 100%; border-radius: 8px; }
+    h1,h2,h3 { color: #18181b; }
+    p { margin: 0 0 .75em; }
+  `,
+  setup(editor) {
+    // Auto-open editor panel when description editor is focused
+    editor.on('focus', () => {
+      const panel = document.getElementById('desc-panel');
+      if (panel) panel.open = true;
+    });
+  }
+});
+</script>
+
+<!-- Prose styles for rendered description -->
+<style>
+.lesson-description h1,.lesson-description h2,.lesson-description h3{color:#18181b;font-weight:700;margin:.75em 0 .4em}
+.lesson-description h1{font-size:1.25rem}.lesson-description h2{font-size:1.1rem}.lesson-description h3{font-size:1rem}
+.lesson-description p{margin:0 0 .75em;color:#52525b;line-height:1.7}
+.lesson-description ul,.lesson-description ol{padding-left:1.5rem;margin:0 0 .75em;color:#52525b}
+.lesson-description li{margin:.2em 0}
+.lesson-description img{max-width:100%;border-radius:8px;margin:.5em 0}
+.lesson-description a{color:#7c3aed;text-decoration:underline}
+.lesson-description strong{color:#18181b;font-weight:600}
+.lesson-description blockquote{border-left:3px solid #e4e4e7;padding-left:1rem;color:#71717a;margin:.75em 0}
+.lesson-description table{border-collapse:collapse;width:100%;margin:.75em 0}
+.lesson-description th,.lesson-description td{border:1px solid #e4e4e7;padding:.4rem .6rem;font-size:.85rem}
+.lesson-description th{background:#fafafa;font-weight:600}
+</style>
+{% else %}
+<!-- Prose styles for students (no editor) -->
+<style>
+.lesson-description h1,.lesson-description h2,.lesson-description h3{color:#18181b;font-weight:700;margin:.75em 0 .4em}
+.lesson-description h1{font-size:1.25rem}.lesson-description h2{font-size:1.1rem}.lesson-description h3{font-size:1rem}
+.lesson-description p{margin:0 0 .75em;color:#52525b;line-height:1.7}
+.lesson-description ul,.lesson-description ol{padding-left:1.5rem;margin:0 0 .75em;color:#52525b}
+.lesson-description li{margin:.2em 0}
+.lesson-description img{max-width:100%;border-radius:8px;margin:.5em 0}
+.lesson-description a{color:#7c3aed;text-decoration:underline}
+.lesson-description strong{color:#18181b;font-weight:600}
+.lesson-description blockquote{border-left:3px solid #e4e4e7;padding-left:1rem;color:#71717a;margin:.75em 0}
+.lesson-description table{border-collapse:collapse;width:100%;margin:.75em 0}
+.lesson-description th,.lesson-description td{border:1px solid #e4e4e7;padding:.4rem .6rem;font-size:.85rem}
+.lesson-description th{background:#fafafa;font-weight:600}
+</style>
+{% endif %}
+
 {% endblock %}

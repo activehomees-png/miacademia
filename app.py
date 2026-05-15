@@ -11,7 +11,7 @@ from flask_mail import Mail, Message as MailMessage
 from sqlalchemy import text
 
 from models import (db, User, Category, Post, Comment,
-                    Course, Section, Lesson, LessonFile, Enrollment, LessonProgress, LiveClass,
+                    Course, Section, Lesson, LessonFile, LessonImage, Enrollment, LessonProgress, LiveClass,
                     SiteSettings, PointEvent, Notification)
 
 app = Flask(__name__)
@@ -780,6 +780,44 @@ def admin_delete_lesson_file(file_id):
     flash('Archivo eliminado.', 'success')
     return redirect(url_for('admin_edit_course', course_id=course_id))
 
+
+# ── Lesson rich-text description ──────────────────────────────────────────────
+
+@app.route('/admin/leccion/<int:lesson_id>/descripcion', methods=['POST'])
+@login_required
+@admin_required
+def admin_save_lesson_description(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+    lesson.description = request.form.get('description', '')
+    db.session.commit()
+    flash('Descripción guardada.', 'success')
+    return redirect(url_for('learn', course_id=lesson.section.course_id,
+                            leccion=lesson_id))
+
+
+@app.route('/admin/leccion/<int:lesson_id>/imagen', methods=['POST'])
+@login_required
+@admin_required
+def admin_upload_lesson_image(lesson_id):
+    """TinyMCE images_upload_url handler — returns JSON with image location."""
+    Lesson.query.get_or_404(lesson_id)   # ensure lesson exists
+    f = request.files.get('file')
+    if not f or not f.filename:
+        return jsonify({'error': 'no file'}), 400
+    data = f.read()
+    img = LessonImage(lesson_id=lesson_id, mimetype=f.mimetype or 'image/jpeg', data=data)
+    db.session.add(img)
+    db.session.commit()
+    return jsonify({'location': url_for('serve_lesson_image', image_id=img.id)})
+
+
+@app.route('/leccion-imagen/<int:image_id>')
+@login_required
+def serve_lesson_image(image_id):
+    img = LessonImage.query.get_or_404(image_id)
+    return send_file(io.BytesIO(img.data), mimetype=img.mimetype)
+
+
 @app.route('/admin/clases')
 @login_required
 @admin_required
@@ -1525,6 +1563,16 @@ with app.app_context():
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_date ON point_event(created_at)"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS recurrence VARCHAR(10) DEFAULT 'none'"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES live_class(id)"))
+            # lesson inline images for rich-text descriptions
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS lesson_image (
+                    id SERIAL PRIMARY KEY,
+                    lesson_id INTEGER NOT NULL REFERENCES lesson(id) ON DELETE CASCADE,
+                    mimetype VARCHAR(100) DEFAULT 'image/jpeg',
+                    data BYTEA NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS notification (
                     id SERIAL PRIMARY KEY,

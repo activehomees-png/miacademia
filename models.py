@@ -138,6 +138,15 @@ class LessonFile(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class LessonImage(db.Model):
+    """Inline images embedded in lesson descriptions via TinyMCE editor."""
+    id         = db.Column(db.Integer, primary_key=True)
+    lesson_id  = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    mimetype   = db.Column(db.String(100), default='image/jpeg')
+    data       = db.Column(db.LargeBinary, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class Enrollment(db.Model):
     id                = db.Column(db.Integer, primary_key=True)
     user_id           = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
