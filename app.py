@@ -139,6 +139,10 @@ def login():
         pw    = request.form.get('password', '')
         user  = User.query.filter_by(email=email).first()
         if user and user.check_password(pw):
+            # Force activate admins regardless of status
+            if user.role == 'admin' and getattr(user, 'status', 'active') != 'active':
+                user.status = 'active'
+                db.session.commit()
             if getattr(user, 'status', 'active') == 'pending':
                 flash('Tu cuenta está pendiente de aprobación por un administrador. Te avisaremos pronto.', 'error')
                 return render_template('auth/login.html')
