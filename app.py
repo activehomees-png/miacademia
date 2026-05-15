@@ -1542,7 +1542,10 @@ Cursos:          {course_count}
 
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f'[DB] ERROR en create_all: {e}')
     try:
         with db.engine.connect() as conn:
             # lesson_file binary migration
@@ -1599,15 +1602,24 @@ with app.app_context():
         print('[DB]    Asegúrate de tener DATABASE_URL en Railway → Variables.')
         print('=' * 60)
 
-    seed_db()
+    try:
+        seed_db()
+    except Exception as e:
+        print(f'[seed] ERROR en seed_db: {e}')
+        db.session.rollback()
+
     # Backfill points for existing lesson completions and comments
-    for lp in LessonProgress.query.all():
-        if not PointEvent.query.filter_by(user_id=lp.user_id, reason='lesson', ref_id=lp.lesson_id).first():
-            db.session.add(PointEvent(user_id=lp.user_id, points=3, reason='lesson', ref_id=lp.lesson_id, created_at=lp.completed_at))
-    for c in Comment.query.all():
-        if not PointEvent.query.filter_by(user_id=c.user_id, reason='comment', ref_id=c.id).first():
-            db.session.add(PointEvent(user_id=c.user_id, points=2, reason='comment', ref_id=c.id, created_at=c.created_at))
-    db.session.commit()
+    try:
+        for lp in LessonProgress.query.all():
+            if not PointEvent.query.filter_by(user_id=lp.user_id, reason='lesson', ref_id=lp.lesson_id).first():
+                db.session.add(PointEvent(user_id=lp.user_id, points=3, reason='lesson', ref_id=lp.lesson_id, created_at=lp.completed_at))
+        for c in Comment.query.all():
+            if not PointEvent.query.filter_by(user_id=c.user_id, reason='comment', ref_id=c.id).first():
+                db.session.add(PointEvent(user_id=c.user_id, points=2, reason='comment', ref_id=c.id, created_at=c.created_at))
+        db.session.commit()
+    except Exception as e:
+        print(f'[seed] ERROR en backfill points: {e}')
+        db.session.rollback()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))
