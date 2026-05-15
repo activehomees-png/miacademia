@@ -118,145 +118,125 @@
           <p class="text-xs text-[#a1a1aa] mt-0.5">⏱ {{ current_lesson.duration_min }} minutos</p>
           {% endif %}
         </div>
-        <div id="done-status" class="flex-shrink-0">
-          {% if current_lesson.id in completed_ids %}
-          <span class="btn btn-secondary">✅ Completada</span>
-          {% else %}
-          <span class="text-xs text-[#a1a1aa] flex items-center gap-1.5">
-            ⏱ <span id="countdown">3:00</span> para completar
-          </span>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          {% if current_user.is_admin %}
+          <!-- Edit content button -->
+          <button id="edit-btn" onclick="startEdit()" title="Editar contenido"
+                  class="w-8 h-8 rounded-full border border-[#e4e4e7] flex items-center justify-center
+                         text-[#71717a] hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition text-sm">
+            ✏️
+          </button>
+          <!-- Manage files button -->
+          <button onclick="toggleFilesPanel()" title="Gestionar archivos"
+                  class="w-8 h-8 rounded-full border border-[#e4e4e7] flex items-center justify-center
+                         text-[#71717a] hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition text-sm">
+            📎
+          </button>
           {% endif %}
+          <div id="done-status" class="flex-shrink-0">
+            {% if current_lesson.id in completed_ids %}
+            <span class="btn btn-secondary">✅ Completada</span>
+            {% else %}
+            <span class="text-xs text-[#a1a1aa] flex items-center gap-1.5">
+              ⏱ <span id="countdown">3:00</span> para completar
+            </span>
+            {% endif %}
+          </div>
         </div>
       </div>
 
-      <!-- Description (rich HTML) -->
-      {% if current_lesson.description %}
-      <div class="p-5 border-b border-[#f4f4f5] prose prose-sm max-w-none lesson-description">
+      <!-- Description VIEW -->
+      <div id="desc-view" class="{% if current_lesson.description %}p-5 border-b border-[#f4f4f5]{% endif %} lesson-description">
         {{ current_lesson.description | safe }}
+      </div>
+
+      <!-- Description EDIT (inline, hidden by default) — admin only -->
+      {% if current_user.is_admin %}
+      <div id="desc-edit" class="hidden border-b border-[#f4f4f5]">
+        <!-- Quill toolbar -->
+        <div id="quill-toolbar" class="border-b border-[#e4e4e7]" style="background:#fafafa">
+          <span class="ql-formats">
+            <select class="ql-header">
+              <option value="2">Título</option>
+              <option value="3">Subtítulo</option>
+              <option selected>Normal</option>
+            </select>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-bold"></button>
+            <button class="ql-italic"></button>
+            <button class="ql-underline"></button>
+          </span>
+          <span class="ql-formats">
+            <select class="ql-color"></select>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-list" value="ordered"></button>
+            <button class="ql-list" value="bullet"></button>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-link"></button>
+            <button class="ql-image" title="Insertar foto"></button>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-clean"></button>
+          </span>
+        </div>
+        <!-- Editor area -->
+        <div id="quill-editor" style="min-height:260px;font-size:14px;"></div>
+        <!-- Save / Cancel bar -->
+        <div class="flex items-center justify-between px-5 py-3 bg-[#fafafa] border-t border-[#f4f4f5]">
+          <span class="text-[11px] text-[#a1a1aa]">📷 Haz clic en el icono de imagen para insertar fotos</span>
+          <div class="flex gap-2">
+            <button onclick="cancelEdit()"
+                    class="btn btn-secondary btn-sm">Cancelar</button>
+            <button onclick="saveEdit()"
+                    class="btn btn-primary btn-sm">💾 Guardar</button>
+          </div>
+        </div>
       </div>
       {% endif %}
 
-      <!-- File attachments -->
+      <!-- File attachments (public view) -->
       {% if current_lesson.files %}
-      <div class="p-5">
+      <div id="files-public" class="p-5 {% if current_user.is_admin %}border-b border-[#f4f4f5]{% endif %}">
         <h3 class="text-xs font-bold text-[#18181b] uppercase tracking-wide mb-3">📎 Recursos adjuntos</h3>
         <div class="space-y-2">
           {% for file in current_lesson.files %}
-          <a href="{{ url_for('serve_lesson_file', file_id=file.id) }}"
-             class="flex items-center gap-3 p-3 rounded-lg border border-[#e4e4e7] hover:border-violet-300
-                    hover:bg-violet-50 transition group">
-            <span class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0 text-sm">📄</span>
-            <span class="text-sm font-medium text-[#18181b] group-hover:text-violet-700 truncate">{{ file.name }}</span>
-            <span class="ml-auto text-xs text-[#a1a1aa] flex-shrink-0">↓ Descargar</span>
-          </a>
+          <div class="flex items-center gap-3 p-3 rounded-lg border border-[#e4e4e7] hover:border-violet-300 hover:bg-violet-50 transition group">
+            <a href="{{ url_for('serve_lesson_file', file_id=file.id) }}"
+               class="flex items-center gap-3 flex-1 min-w-0">
+              <span class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0 text-sm">📄</span>
+              <span class="text-sm font-medium text-[#18181b] group-hover:text-violet-700 truncate">{{ file.name }}</span>
+              <span class="ml-auto text-xs text-[#a1a1aa] flex-shrink-0">↓</span>
+            </a>
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('admin_delete_lesson_file', file_id=file.id) }}">
+              <button type="submit" onclick="return confirm('¿Eliminar {{ file.name }}?')"
+                      class="text-[#a1a1aa] hover:text-red-500 transition text-xs px-1">✕</button>
+            </form>
+            {% endif %}
+          </div>
           {% endfor %}
         </div>
       </div>
       {% endif %}
 
-    </div><!-- end lesson info card -->
-
-    <!-- ══ ADMIN EDITOR PANEL ══════════════════════════════════════════════ -->
-    {% if current_user.is_admin %}
-    <div id="admin-editor-panel" class="mt-4 rounded-xl overflow-hidden shadow-sm"
-         style="border:2px solid #7c3aed;background:#faf8ff">
-
-      <!-- Header bar -->
-      <div class="flex items-center justify-between px-5 py-3"
-           style="background:#7c3aed">
-        <div class="flex items-center gap-2 text-white font-semibold text-sm">
-          <span>⚙️</span>
-          <span>Panel de edición — Admin</span>
-        </div>
-        <!-- Tab buttons -->
-        <div class="flex gap-1">
-          <button onclick="showAdminTab('content')" id="tab-content"
-                  class="admin-tab active px-3 py-1 text-xs rounded-md font-medium transition">
-            ✏️ Contenido
-          </button>
-          <button onclick="showAdminTab('files')" id="tab-files"
-                  class="admin-tab px-3 py-1 text-xs rounded-md font-medium transition">
-            📎 Archivos
-          </button>
-        </div>
-      </div>
-
-      <!-- TAB: Contenido (Quill editor) -->
-      <div id="admin-tab-content" class="p-5">
-        <p class="text-xs text-[#71717a] mb-3">Escribe el texto de esta clase, añade fotos, listas, links… Se muestra debajo del vídeo para todos los alumnos.</p>
-        <form id="desc-form" method="POST" action="{{ url_for('admin_save_lesson_description', lesson_id=current_lesson.id) }}">
-          <!-- Quill toolbar + editor -->
-          <div id="quill-toolbar">
-            <span class="ql-formats">
-              <select class="ql-header"><option value="2">Título</option><option value="3">Subtítulo</option><option selected></option></select>
-            </span>
-            <span class="ql-formats">
-              <button class="ql-bold"></button>
-              <button class="ql-italic"></button>
-              <button class="ql-underline"></button>
-            </span>
-            <span class="ql-formats">
-              <select class="ql-color"></select>
-            </span>
-            <span class="ql-formats">
-              <button class="ql-list" value="ordered"></button>
-              <button class="ql-list" value="bullet"></button>
-            </span>
-            <span class="ql-formats">
-              <button class="ql-link"></button>
-              <button class="ql-image" title="Insertar imagen"></button>
-            </span>
-            <span class="ql-formats">
-              <button class="ql-clean"></button>
-            </span>
-          </div>
-          <div id="quill-editor" style="height:350px;background:white;font-size:14px;"></div>
-          <!-- Hidden field that gets filled on submit -->
-          <input type="hidden" name="description" id="desc-hidden"/>
-          <div class="flex items-center justify-between mt-3">
-            <span class="text-[11px] text-[#a1a1aa]">📷 Usa el botón de imagen para insertar fotos</span>
-            <button type="submit" class="btn btn-primary">💾 Guardar contenido</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- TAB: Archivos adjuntos -->
-      <div id="admin-tab-files" class="p-5 hidden">
-        <p class="text-xs text-[#71717a] mb-3">Los archivos aparecen como recursos descargables debajo del vídeo.</p>
-
-        {% if current_lesson.files %}
-        <div class="space-y-1 mb-4">
-          {% for file in current_lesson.files %}
-          <div class="flex items-center gap-3 p-2.5 rounded-lg bg-white border border-[#e4e4e7]">
-            <span class="text-lg">📄</span>
-            <span class="flex-1 text-sm text-[#18181b] truncate">{{ file.name }}</span>
-            <form method="POST" action="{{ url_for('admin_delete_lesson_file', file_id=file.id) }}">
-              <button type="submit"
-                      onclick="return confirm('¿Eliminar {{ file.name }}?')"
-                      class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition">
-                🗑 Eliminar
-              </button>
-            </form>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-sm text-[#a1a1aa] mb-4">Sin archivos todavía.</p>
-        {% endif %}
-
+      <!-- Admin files panel (hidden, toggled by 📎 button) -->
+      {% if current_user.is_admin %}
+      <div id="files-panel" class="hidden p-5 bg-[#fafafa]">
+        <p class="text-xs font-semibold text-[#18181b] mb-3">Subir archivo adjunto</p>
         <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=current_lesson.id) }}"
-              enctype="multipart/form-data"
-              class="flex flex-col gap-2 p-4 rounded-lg border-2 border-dashed border-[#d4d4d8] bg-white">
-          <p class="text-xs font-semibold text-[#18181b]">Subir nuevo archivo</p>
+              enctype="multipart/form-data" class="flex flex-col gap-2">
           <input type="text" name="name" class="input" placeholder="Nombre visible (ej: Diapositivas.pdf)" required/>
           <input type="file" name="file" class="input py-1.5"
                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3,.png,.jpg,.jpeg" required/>
           <button type="submit" class="btn btn-primary self-start">⬆ Subir archivo</button>
         </form>
       </div>
+      {% endif %}
 
-    </div><!-- end admin panel -->
-    {% endif %}
+    </div><!-- end lesson info card -->
 
     <!-- Navigation: prev/next lesson -->
     {% set ns = namespace(prev=None, next=None, found=False) %}
@@ -362,79 +342,97 @@ const _timer = setInterval(() => {
 </style>
 
 {% if current_user.is_admin and current_lesson %}
-<!-- Admin tab styles -->
+<!-- Quill CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
 <style>
-.admin-tab { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.1); }
-.admin-tab:hover { color: white; background: rgba(255,255,255,0.2); }
-.admin-tab.active { color: #7c3aed; background: white; }
-
-/* Quill overrides */
-#quill-editor { border:1px solid #e4e4e7; border-top:none; border-radius:0 0 8px 8px; }
-#quill-toolbar { border:1px solid #e4e4e7; border-radius:8px 8px 0 0; background:#fafafa; }
-.ql-editor { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; color:#52525b; line-height:1.7; min-height:300px; }
-.ql-editor h2 { font-size:1.15rem; font-weight:700; color:#18181b; margin:.6em 0 .3em; }
-.ql-editor h3 { font-size:1rem; font-weight:700; color:#18181b; margin:.5em 0 .3em; }
-.ql-editor p  { margin:0 0 .6em; }
-.ql-editor img { max-width:100%; border-radius:8px; }
-.ql-editor a  { color:#7c3aed; }
+/* Quill inline editor */
+#quill-editor .ql-editor {
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px; color:#52525b; line-height:1.7; min-height:240px; padding:16px 20px;
+}
+#quill-editor .ql-editor h2{font-size:1.15rem;font-weight:700;color:#18181b;margin:.6em 0 .3em}
+#quill-editor .ql-editor h3{font-size:1rem;font-weight:700;color:#18181b;margin:.5em 0 .3em}
+#quill-editor .ql-editor p{margin:0 0 .6em}
+#quill-editor .ql-editor img{max-width:100%;border-radius:8px}
+#quill-editor .ql-editor a{color:#7c3aed}
+#quill-toolbar{padding:4px 8px}
+/* Edit button active state */
+#edit-btn.active{background:#ede9fe;color:#7c3aed;border-color:#a78bfa}
 </style>
 
-<!-- Tab switcher -->
-<script>
-function showAdminTab(tab) {
-  document.getElementById('admin-tab-content').classList.toggle('hidden', tab !== 'content');
-  document.getElementById('admin-tab-files').classList.toggle('hidden', tab !== 'files');
-  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-}
-</script>
-
-<!-- Quill (free, no API key) -->
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+<!-- Quill JS -->
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
-(function() {
-  const quill = new Quill('#quill-editor', {
-    theme: 'snow',
-    modules: {
-      toolbar: '#quill-toolbar'
-    }
-  });
+let _quill = null;
 
-  // Load existing content
-  const existing = {{ current_lesson.description | tojson }};
-  if (existing) quill.root.innerHTML = existing;
+function startEdit() {
+  // Init Quill only once
+  if (!_quill) {
+    _quill = new Quill('#quill-editor', {
+      theme: 'snow',
+      modules: { toolbar: '#quill-toolbar' }
+    });
+    // Load current description into editor
+    const existing = {{ current_lesson.description | tojson }};
+    if (existing) _quill.root.innerHTML = existing;
+    // Custom image upload
+    _quill.getModule('toolbar').addHandler('image', function() {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.click();
+      inp.onchange = async () => {
+        const file = inp.files[0]; if (!file) return;
+        const fd = new FormData(); fd.append('file', file);
+        try {
+          const r = await fetch('{{ url_for("admin_upload_lesson_image", lesson_id=current_lesson.id) }}',
+                                {method:'POST', body:fd});
+          const data = await r.json();
+          if (data.location) {
+            const range = _quill.getSelection(true);
+            _quill.insertEmbed(range.index, 'image', data.location);
+            _quill.setSelection(range.index + 1);
+          }
+        } catch(e) { showToast('⚠️ Error subiendo imagen'); }
+      };
+    });
+  }
+  document.getElementById('desc-view').classList.add('hidden');
+  document.getElementById('desc-edit').classList.remove('hidden');
+  document.getElementById('edit-btn').classList.add('active');
+  _quill.focus();
+}
 
-  // Custom image upload handler → sends to our server, inserts URL
-  quill.getModule('toolbar').addHandler('image', function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.click();
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const fd = new FormData();
-      fd.append('file', file);
-      try {
-        const r = await fetch('{{ url_for("admin_upload_lesson_image", lesson_id=current_lesson.id) }}', {
-          method: 'POST', body: fd
-        });
-        const data = await r.json();
-        if (data.location) {
-          const range = quill.getSelection(true);
-          quill.insertEmbed(range.index, 'image', data.location);
-          quill.setSelection(range.index + 1);
-        }
-      } catch(e) { alert('Error subiendo imagen: ' + e); }
-    };
-  });
+function cancelEdit() {
+  document.getElementById('desc-edit').classList.add('hidden');
+  document.getElementById('desc-view').classList.remove('hidden');
+  document.getElementById('edit-btn').classList.remove('active');
+}
 
-  // On submit → copy editor HTML into hidden field
-  document.getElementById('desc-form').addEventListener('submit', function() {
-    document.getElementById('desc-hidden').value = quill.root.innerHTML;
-  });
-})();
+async function saveEdit() {
+  const html = _quill.root.innerHTML;
+  // Optimistic update
+  const view = document.getElementById('desc-view');
+  if (html && html !== '<p><br></p>') {
+    view.innerHTML = html;
+    view.className = 'p-5 border-b border-[#f4f4f5] lesson-description';
+  } else {
+    view.innerHTML = '';
+    view.className = 'lesson-description';
+  }
+  cancelEdit();
+  showToast('💾 Guardando…');
+  // POST to server (no page reload)
+  try {
+    const fd = new FormData();
+    fd.append('description', html);
+    await fetch('{{ url_for("admin_save_lesson_description", lesson_id=current_lesson.id) }}',
+                {method:'POST', body:fd, redirect:'manual'});
+    showToast('✅ Contenido guardado');
+  } catch(e) { showToast('⚠️ Error al guardar'); }
+}
+
+function toggleFilesPanel() {
+  document.getElementById('files-panel').classList.toggle('hidden');
+}
 </script>
 {% endif %}
 
