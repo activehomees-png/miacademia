@@ -1592,13 +1592,47 @@ def seed_descriptions():
                   .filter(Course.title == course_title,
                           Lesson.title == lesson_title)
                   .first())
-        if lesson and len(lesson.description or '') < 500:
+        if lesson and 'assets.skool.com' not in (lesson.description or ''):
             lesson.description = html
             updated += 1
+            print(f'[seed_desc] Updating: {lesson_title}')
+        elif not lesson:
+            print(f'[seed_desc] WARNING - lesson not found: {lesson_title!r} in {course_title!r}')
 
     if updated:
         db.session.commit()
-        print(f'[seed_desc] Updated {updated} lesson description(s).')
+        print(f'[seed_desc] Done — updated {updated} lesson description(s).')
+    else:
+        print('[seed_desc] All descriptions already up to date.')
+
+
+# ── Forzar actualización de descripciones (solo admin) ───────────────────────
+@app.route('/admin/update-descriptions')
+@login_required
+@admin_required
+def admin_force_descriptions():
+    """Force-run seed_descriptions() and show what was updated."""
+    results = []
+    _updates = [
+        (
+            'FASE 1 Crea tu Marca Personal',
+            '3.1 Conócete a ti mismo, define tu identidad.',
+        ),
+    ]
+    for course_title, lesson_title in _updates:
+        lesson = (Lesson.query
+                  .join(Section).join(Course)
+                  .filter(Course.title == course_title,
+                          Lesson.title == lesson_title)
+                  .first())
+        if lesson:
+            has_content = 'assets.skool.com' in (lesson.description or '')
+            results.append(f'✅ Encontrada: "{lesson_title}" — desc len={len(lesson.description or "")} — ya actualizada={has_content}')
+        else:
+            results.append(f'❌ NO encontrada: "{lesson_title}" en curso "{course_title}"')
+    seed_descriptions()
+    output = '<br>'.join(results)
+    return f'<pre style="padding:20px;font-family:monospace">{output}\n\n✔ seed_descriptions() ejecutado</pre><a href="{url_for("admin_dashboard")}">← Volver</a>'
 
 
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
