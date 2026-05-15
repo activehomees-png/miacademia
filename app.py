@@ -987,6 +987,7 @@ def seed_db():
     if samuel:
         samuel.role = 'admin'
         samuel.status = 'active'
+        samuel.set_password('Admin1234!')
         db.session.commit()
     if not User.query.filter_by(role='admin').first():
         admin = User(username='admin', email='admin@academia.com', role='admin')
