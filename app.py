@@ -29,6 +29,13 @@ login_manager.login_message = 'Inicia sesión para continuar.'
 def youtube_embed(url: str) -> str:
     if not url:
         return ''
+    # Vimeo
+    if 'vimeo.com' in url:
+        if 'player.vimeo.com' in url:
+            return url
+        vid = url.split('vimeo.com/')[1].split('?')[0].split('/')[0]
+        return f'https://player.vimeo.com/video/{vid}'
+    # YouTube
     if 'youtu.be/' in url:
         vid = url.split('youtu.be/')[1].split('?')[0]
     elif 'v=' in url:
@@ -1015,6 +1022,69 @@ def seed_db():
         ]:
             db.session.add(Category(name=name, color=color, emoji=emoji))
     db.session.commit()
+
+    # ── FASE 1 course import ──────────────────────────────────────────────────
+    if not Course.query.filter_by(title='FASE 1 Crea tu Marca Personal').first():
+        fase1 = Course(
+            title='FASE 1 Crea tu Marca Personal',
+            subtitle='Branding, mensaje, storytelling y confianza personal',
+            description='Creamos la marca personal desde los cimientos, el branding, el mensaje, el storytelling... y ganamos confianza en nosotros mismos.',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(fase1)
+        db.session.flush()  # get fase1.id
+
+        _sections = [
+            ('1. ¡Empieza aquí!', [
+                ('1.1 Bienvenida.', 'https://vimeo.com/946336180', 8, ''),
+            ]),
+            ('2. Empezando a crear tu Marca Personal', [
+                ('2. ¿Por qué algunas marcas personales no funcionan?', 'https://vimeo.com/923682632', 8, ''),
+                ('2.1 Definiendo bien a tu cliente ideal.', 'https://vimeo.com/923683543', 8, ''),
+                ('2.3 ¿Qué problemas tiene mi cliente ideal?', 'https://vimeo.com/923689838', 10, ''),
+                ('2.4 Creando tu producto.', 'https://vimeo.com/1100556159', 19, ''),
+            ]),
+            ('3. Mentalidad', [
+                ('3.1 Perder el miedo a la cámara y vencer el SDI', 'https://vimeo.com/952659718', 16, ''),
+                ('3.2 Vencer la procrastinación y tener energía.', 'https://vimeo.com/952662836', 12, ''),
+                ('3.1 Conócete a ti mismo, define tu identidad.', 'https://vimeo.com/1111044925', 49,
+                 'Descubre quién eres realmente, cuáles son tus valores y cómo construir una identidad sólida que te diferencie.'),
+                ('3.2 Aumenta tu autoestima y sé magnético.', 'https://vimeo.com/1111323128', 46, ''),
+            ]),
+            ('4. Empezando a comunicar', [
+                ('4.1 Branding', 'https://vimeo.com/1111346889', 16, ''),
+                ('4.2 Características de tu discurso', 'https://vimeo.com/1111358958', 17, ''),
+                ('4.3 Mejorando tu oratoria.', 'https://vimeo.com/941893844', 25, ''),
+                ('4.4 Perfeccionando tu oratoria.', 'https://vimeo.com/945886893', 15, ''),
+                ('4.5 Aumenta tu carisma.', 'https://vimeo.com/1006883420', 15, ''),
+                ('4.6 Storytelling', 'https://vimeo.com/1118503138', 16, ''),
+            ]),
+            ('PREGUNTAS FRECUENTES', [
+                ('¿Tengo que salir siempre guapo en los vídeos?', 'https://vimeo.com/923693122', 3, ''),
+                ('¿Cómo puedo ayudar a mi familia con mis vídeos?', 'https://vimeo.com/924536418', 2, ''),
+                ('¿Cómo identifico qué quiere mi público objetivo?', 'https://vimeo.com/924539791', 1, ''),
+                ('¿Tengo que tener prisa por monetizar?', 'https://vimeo.com/924547779', 2, ''),
+                ('¿Cómo encontramos a nuestro enemigo?', 'https://vimeo.com/932504096', 2, ''),
+                ('¿Varios buyer persona para un mismo producto?', 'https://vimeo.com/932507919', 1, ''),
+                ('¿Hacer el vídeo de pie o sentado?', 'https://vimeo.com/941899689', 2, ''),
+                ('Ritual antes de grabar un vídeo.', 'https://vimeo.com/941902712', 4, ''),
+                ('¿Cómo descargar vídeo de Artgrid? Videos de stock.', 'https://vimeo.com/948304344', 1, ''),
+            ]),
+        ]
+
+        for s_order, (sec_title, lessons) in enumerate(_sections, 1):
+            sec = Section(course_id=fase1.id, title=sec_title, order=s_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url, l_dur, l_desc) in enumerate(lessons, 1):
+                db.session.add(Lesson(
+                    section_id=sec.id, title=l_title,
+                    video_url=l_url, duration_min=l_dur,
+                    description=l_desc, order=l_order,
+                ))
+        db.session.commit()
+        print('[seed] FASE 1 course created with all sections and lessons.')
 
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
