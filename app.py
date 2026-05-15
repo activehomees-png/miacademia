@@ -987,32 +987,29 @@ def not_found(e):
 # ── INIT ──────────────────────────────────────────────────────────────────────
 
 def seed_db():
+    # SiteSettings — solo crea si no existe, nunca sobreescribe
     s = SiteSettings.query.first()
     if not s:
-        s = SiteSettings()
+        s = SiteSettings(academy_name='Marca Atractora')
         db.session.add(s)
-    if s.academy_name == 'Mi Academia':
-        s.academy_name = 'Marca Atractora'
-    db.session.commit()
-    # Ensure samuel is admin
+        db.session.commit()
+
+    # Samuel — solo actualiza role/status, NUNCA resetea contraseña
     samuel = User.query.filter_by(email='samuelgavilant@gmail.com').first()
     if not samuel:
-        samuel = User(username='samuel', email='samuelgavilant@gmail.com', role='admin', status='active')
-        samuel.set_password('Admin1234!')
+        samuel = User(username='samuel', email='samuelgavilant@gmail.com',
+                      role='admin', status='active')
+        samuel.set_password('Admin1234!')  # solo la primera vez
         db.session.add(samuel)
     else:
-        samuel.role = 'admin'
-        samuel.status = 'active'
-        samuel.set_password('Admin1234!')
+        # Solo garantizar que sea admin/activo, sin tocar contraseña ni otros datos
+        if samuel.role != 'admin':
+            samuel.role = 'admin'
+        if samuel.status != 'active':
+            samuel.status = 'active'
     db.session.commit()
-    if not User.query.filter_by(role='admin').first():
-        admin = User(username='admin', email='admin@academia.com', role='admin')
-        admin.set_password('admin123')
-        db.session.add(admin)
-    if not User.query.filter_by(username='alumno').first():
-        student = User(username='alumno', email='alumno@academia.com', role='student')
-        student.set_password('alumno123')
-        db.session.add(student)
+
+    # Categorías por defecto — solo si no hay ninguna
     if not Category.query.first():
         for name, color, emoji in [
             ('General',   '#6366f1', '💬'),
