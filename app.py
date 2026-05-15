@@ -1399,6 +1399,81 @@ def seed_db():
         db.session.commit()
         print('[seed] FASE 4 course created with all sections and lessons.')
 
+    # ── FASE 5 course import ──────────────────────────────────────────────────
+    if not Course.query.filter_by(title='FASE 5 MENTALIDAD').first():
+        fase5 = Course(
+            title='FASE 5 MENTALIDAD',
+            subtitle='Todo el desarrollo personal que necesitas para ser autentico y volverte magnético y viral.',
+            is_free=False,
+        )
+        db.session.add(fase5)
+        db.session.flush()
+
+        _sections5 = [
+            ('1 Hábitos para la paz mental', [
+                ('1.1 Introduccion',                        'https://vimeo.com/749878520',          6,  ''),
+                ('1.2 Como realizar este curso',            'https://vimeo.com/749881629/e2cbd4caf7', 2, ''),
+                ('1.3 ¿Porque cuesta tanto cambiar?',      '',                                      0,  ''),
+                ('2.1 El presente',                        '',                                      0,  ''),
+                ('2.1.1 Profundizando en la meditacion',   '',                                      0,  ''),
+                ('2.2 Pensar menos, sentir mas',           '',                                      0,  ''),
+                ('2.3 Decido vivir este momento.',         '',                                      0,  ''),
+                ('2.3.1 Sanar el pasado',                  '',                                      0,  ''),
+                ('3.1 La Aceptacion',                      '',                                      0,  ''),
+                ('4.1 Como se forma el ego',               '',                                      0,  ''),
+                ('4.1.2 ¿Para que?',                       '',                                      0,  ''),
+                ('4.1.1 Creencias',                        '',                                      0,  ''),
+                ('4.2 Niño Interior',                      '',                                      0,  ''),
+                ('5.1 La ilusion de uno mismo',            '',                                      0,  ''),
+                ('5.2 Recogida de proyecciones',           '',                                      0,  ''),
+                ('5.1.1 Reprogramar la mente',             '',                                      0,  ''),
+                ('6.1 Habitos',                            '',                                      0,  ''),
+                ('7.1 Mindfull eating.',                   '',                                      0,  ''),
+                ('7.2.1 Alimentacion consciente',          '',                                      0,  ''),
+                ('7.2.2 Alimentacion consciente',          '',                                      0,  ''),
+                ('8.1 Iniciacion a la respiracion',        '',                                      0,  ''),
+                ('8.2 Respiracion consciente',             '',                                      0,  ''),
+                ('9.1 Energia sexual',                     '',                                      0,  ''),
+                ('9.2 Sexualidad consciente',              '',                                      0,  ''),
+                ('10. Super habitos',                      '',                                      0,  ''),
+                ('11. Cierre de curso + regalo',           'https://vimeo.com/749914145/8f0ad0592b', 10, ''),
+            ]),
+            ('2. Encuentra tu proposito', [
+                ('1. ¿A que me dedico?',                   'https://vimeo.com/733891828/9bc0bc2936',  118, ''),
+                ('2. Hoy vas a encontrar tu propósito.',   'https://vimeo.com/738144908/10eafd0ae1',  108, ''),
+                ('3. Tu don y tu talento.',                'https://vimeo.com/738152347/ea9a721a10',  104, ''),
+                ('4. El camino al propósito.',             'https://vimeo.com/733930732/8b5e4907c4',  105, ''),
+                ('5. El ego.',                             'https://vimeo.com/734454135/6eceed3077',  114, ''),
+                ('6. Monetiza tu pasión.',                 'https://vimeo.com/738158599/0f607a9a0d',  102, ''),
+            ]),
+            ('5 REPROGRAMACIÓN MENTAL NIÑO INTERIOR', [
+                ('1. El Ambiente donde te programaste.',   'https://vimeo.com/1133998226',  35, ''),
+                ('2. La emoción que viviste de niño.',     'https://vimeo.com/1136253801',  81, ''),
+                ('3. Como se forja el personaje',          'https://vimeo.com/1138661240',  58, ''),
+                ('4. Desprogramando la mente',             'https://vimeo.com/1140914534',  60, ''),
+                ('5. Encuentro con el niño.',              'https://vimeo.com/1143207136',  50, ''),
+                ('6. Recogida de proyecciones.',           'https://vimeo.com/1145401240',  88, ''),
+                ('7. El personaje',                        'https://vimeo.com/1147459657',  65, ''),
+                ('8. El sistema del personaje.',           'https://vimeo.com/1152337303',  64, ''),
+                ('9. Final niño interior.',                'https://vimeo.com/1154444356',  50, ''),
+            ]),
+            ('6 PROGRAMA TU MENTE PARA LA ABUNDANCIA', [
+                ('6.1 Atraer Abundancia y Dinero Cambiando tu Mente', 'https://youtu.be/l27PoZo_rpQ', 54, ''),
+                ('6.2 Tu vieja identidad sobre el dinero.',           'https://youtu.be/nG9F_gKpTTM', 31, ''),
+                ('6.3 El Dinero Está En La Relación Con Tu Padre',    'https://youtu.be/7samMzQPuzo', 18, ''),
+            ]),
+        ]
+
+        for s_order, (sec_title, lessons) in enumerate(_sections5, 1):
+            sec = Section(course_id=fase5.id, title=sec_title, order=s_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url, l_dur, l_desc) in enumerate(lessons, 1):
+                db.session.add(Lesson(section_id=sec.id, title=l_title,
+                    video_url=l_url, duration_min=l_dur, description=l_desc, order=l_order))
+        db.session.commit()
+        print('[seed] FASE 5 course created with all sections and lessons.')
+
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
 @app.route('/admin/db-status')
 @login_required
