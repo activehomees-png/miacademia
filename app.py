@@ -33,7 +33,13 @@ def youtube_embed(url: str) -> str:
     if 'vimeo.com' in url:
         if 'player.vimeo.com' in url:
             return url
-        vid = url.split('vimeo.com/')[1].split('?')[0].split('/')[0]
+        # strip query string, split path after vimeo.com/
+        path = url.split('vimeo.com/')[1].split('?')[0]
+        parts = path.split('/')
+        vid = parts[0]
+        # si hay hash (vimeo.com/ID/HASH) lo añadimos como parámetro h=
+        if len(parts) > 1 and parts[1]:
+            return f'https://player.vimeo.com/video/{vid}?h={parts[1]}'
         return f'https://player.vimeo.com/video/{vid}'
     # YouTube
     if 'youtu.be/' in url:
@@ -1140,6 +1146,86 @@ def seed_db():
                 ))
         db.session.commit()
         print('[seed] FASE 2 course created with all sections and lessons.')
+
+    # ── FASE 3 course import ──────────────────────────────────────────────────
+    if not Course.query.filter_by(title='FASE 3. Atraer en redes sociales.').first():
+        fase3 = Course(
+            title='FASE 3. Atraer en redes sociales.',
+            subtitle='YouTube, Instagram, TikTok y crecimiento exponencial',
+            description='Empápate de como funciona Las redes sociales de principio a fin y crea una comunidad que genere tus primeros miles de suscriptores.',
+            is_published=True, price=0.0,
+        )
+        db.session.add(fase3)
+        db.session.flush()
+
+        _sections3 = [
+            ('1. YouTube', [
+                ('1.0 Crear tu Canal de YouTube',                                  'https://vimeo.com/905919839',           16, ''),
+                ('1.1 Como subir un vídeo a Youtube',                              'https://vimeo.com/924959549',            6, ''),
+                ('1.2 Analíticas para despegar',                                   'https://vimeo.com/851008454/d29b98cc32', 47, ''),
+                ('1.3 La mentalidad que necesitas para YT',                        'https://vimeo.com/855072488/4182033253', 60, ''),
+                ('1.4 Títulos y Miniaturas',                                       'https://vimeo.com/857239956/678447f67a', 47, ''),
+                ('1.4.1 Crear una miniatura con canva',                            'https://vimeo.com/948289425',            6, ''),
+                ('1.4.2 Hacer miniaturas con Photoshop',                           'https://vimeo.com/956991589',            6, ''),
+                ('1.5. Todo lo que debes saber sobre SEO',                         'https://vimeo.com/858909961/13bf9725bb', 41, ''),
+                ('1.6. Copy y guiones para tus vídeos',                            'https://vimeo.com/863595428/b7de18d61b', 55, ''),
+                ('1.6.1 Tres guiones para crear vídeo de Youtube',                 'https://vimeo.com/1164633315',           23, ''),
+                ('1.7 Edita tus vídeos para retener la atención',                  'https://vimeo.com/891387027',            42, ''),
+                ('1.8 Audio y música',                                             'https://vimeo.com/891394359',            40, ''),
+                ('1.9 Trucos para YT',                                             'https://vimeo.com/891403759',            45, ''),
+                ('1.10 Crossplatform',                                             'https://vimeo.com/891405274',            44, ''),
+                ('1.11 CrossPlatform con ADS para conseguir trafico',              'https://vimeo.com/893240433',            34, ''),
+                ('1.12 Todo sobre el copyright',                                   'https://vimeo.com/953984470',             9, ''),
+                ('1.13 Configurar google adsense para monetizar',                  'https://vimeo.com/988825345',             7, ''),
+                ('1.14 Configuración fiscal Google adsense',                       'https://youtu.be/wtX_YIN3KLU',           15, ''),
+                ('1.15 Hacer crecer tu canal de YT con publicidad',                'https://vimeo.com/1054224518',           16, ''),
+            ]),
+            ('2. INSTAGRAM', [
+                ('2.1 Primeros pases en la plataforma',                            'https://vimeo.com/901650539',            56, ''),
+                ('2.2 Crear carruseles virales',                                   'https://vimeo.com/906272733',            66, ''),
+                ('2.3 Creando comunidad en Historias de Instagram',                'https://vimeo.com/908386985',            61, ''),
+                ('2.3.1 Historias destacas de Instagram',                          'https://vimeo.com/1013965873',            9, ''),
+                ('2.4 Como crecer (rápido) Instagram (Fran Berges)',               'https://vimeo.com/911247204',           116, ''),
+                ('2.5 Automatiza Instagram con Manychat',                          'https://vimeo.com/1135690799',           63, ''),
+                ('2.6 Como y cuando hacer lives',                                  'https://vimeo.com/915327765',            58, ''),
+                ('2.7 ¿Cómo hacer un reel viral?',                                'https://vimeo.com/933436126',             9, ''),
+                ('2.8 Estructura vídeo viral',                                     'https://vimeo.com/933441911',             4, ''),
+                ('2.9 Ganchos y copy writing para tu reel viral',                  'https://vimeo.com/933444451',            14, ''),
+                ('2.10 Vuélvete viral con reels',                                  'https://vimeo.com/903836622',            75, ''),
+                ('2.11 Ganchos visuales',                                          'https://vimeo.com/1125481695',           15, ''),
+                ('2.12 Retención de la audiencia',                                 'https://vimeo.com/983628820',            23, ''),
+            ]),
+            ('3. TIKTOK', [
+                ('3.0 Crea y configura tu cuenta de tiktok',                       'https://vimeo.com/957594124',             8, ''),
+                ('3.1 Empezando en Tiktok',                                        'https://vimeo.com/889656484',            63, ''),
+                ('3.2 Creando contenido para posicionarte en Tiktok',              'https://vimeo.com/892008535',            68, ''),
+                ('3.3 Como vender en tiktok',                                      'https://vimeo.com/894269285',            62, ''),
+            ]),
+            ('4. CRECIMIENTO EXPONENCIAL EN RRSS', [
+                ('4.1 Empezamos',                                                   'https://vimeo.com/1057991097',           18, ''),
+                ('4.2 Avatar Especifico',                                           'https://vimeo.com/1059652394',           19, ''),
+                ('4.3 Avatar 3.0',                                                  'https://vimeo.com/1060927420',           14, ''),
+                ('4.4 Análisis de tu competencia',                                  'https://vimeo.com/1069644542',           14, ''),
+                ('4.5 Validar un producto',                                         'https://vimeo.com/1142114582',           16, ''),
+                ('4.6 Estrategia de venta En Redes Sociales',                       'https://vimeo.com/1139986255',           22, ''),
+                ('4.7 Optimización de contenidos. Chat GPT',                        'https://vimeo.com/1013969721',           11, ''),
+                ('Como crear comunidad y fidelidad',                                'https://vimeo.com/951552493',            15, ''),
+            ]),
+            ('5. PREGUNTAS Y DUDAS', [
+                ('¿Cuál es la mejor hora para publicar vídeo? (YT)',               'https://vimeo.com/943679344',             2, ''),
+                ('¿Es bueno hacer publicidad en Instagram pagada?',                'https://vimeo.com/951268479',             3, ''),
+            ]),
+        ]
+
+        for s_order, (sec_title, lessons) in enumerate(_sections3, 1):
+            sec = Section(course_id=fase3.id, title=sec_title, order=s_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url, l_dur, l_desc) in enumerate(lessons, 1):
+                db.session.add(Lesson(section_id=sec.id, title=l_title,
+                    video_url=l_url, duration_min=l_dur, description=l_desc, order=l_order))
+        db.session.commit()
+        print('[seed] FASE 3 course created with all sections and lessons.')
 
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
 @app.route('/admin/db-status')
