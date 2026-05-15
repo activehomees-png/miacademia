@@ -1512,6 +1512,95 @@ def seed_db():
         db.session.commit()
         print('[seed] FASE 5 course created with all sections and lessons.')
 
+
+def seed_descriptions():
+    """Populate lesson descriptions with full rich HTML content (text + images from Skool)."""
+
+    _updates = [
+        # ── FASE 1 · 3.1 Conócete a ti mismo, define tu identidad. ───────────
+        (
+            'FASE 1 Crea tu Marca Personal',
+            '3.1 Conócete a ti mismo, define tu identidad.',
+            """<p>Los fundamentos para crear una Marca Personal se basan en:</p>
+<ul>
+  <li><strong>La identidad:</strong> Todo aquello que te define, desde tu manera de hablar, tu vestimenta, el color que utilizas para tus videos, tu peinado... También todo lo que está dentro de ti, como tu seguridad, la dureza del mensaje, la dulzura... Todo esto se puede entrenar y moldear para ir definiendo nuestra identidad.</li>
+  <li><strong>Valor:</strong> El valor es lo que ayudas a los demás con tu mensaje, la identidad es lo que más le ayuda al otro y lo que más transmite, pero luego esta el mensaje. La información es la vía por la cual nosotros vamos a llegar al otro, un mensaje autentico, nuevo, fresco, creativo... va a atraer a nuestra audiencia.</li>
+  <li><strong>Estrategia:</strong> La estrategia seria conocer el medio (las redes sociales), tener una fuente de ingresos, crear comunidad... Todo lo que tiene que ver con lo mecánico y los sistemas.</li>
+</ul>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/5cd82c8ec20d4829a265e27212e9110e185a4ff7c916483398c51d6d679f9659-md.jpg" alt="Identidad, Valor, Estrategia" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/693fe4b714044043a07b4d3f11c3974a5d456466f2274b5797a886ff16ab5a9d-md.jpg" alt="" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/f21500dd3a41416a94d13f619749cae0e794403bde3b48b4bfbb5336b8520bed-md.jpg" alt="" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+
+<p><strong>Singularidad y diferenciación</strong></p>
+<p>Encuentra elementos que solo tú compartas y que formen parte de tu marca, podría ser un deporte, una actividad, una forma de vestir, una bebida... algo con lo que tu audiencia se identifique.</p>
+<p>Tu historia es algo único, comparte tu evolución y tu historia de vida, de superación, te recomiendo que apliques el viaje del héroe a tu historia.</p>
+
+<p><strong>Define qué es lo que haces</strong></p>
+<p>Es importante definir que es lo que haces con una frase, para cuando alguien te pregunte o tengas que poner la descripción en tu Instagram o YouTube sepas directamente que poner. Ejemplo: <em>"Soy Samuel divulgador de la consciencia para generar un impacto en las personas y que estas puedan mejorar su vida y hacer de este mundo un lugar mejor."</em></p>
+<p>Así mismo te recomiendo que apuntes en una <strong>lista los valores para tu marca.</strong> El valor, la integridad, la libertad, el amor... Para que sea lo que guíe tu camino y comuniques desde ahí.</p>
+
+<p><strong>Haz una breve lista sobre qué problema resuelves</strong></p>
+<p>Es fundamental determinar quién es la persona que vas a ayudar, aunque aún sea un poco pronto y lo iremos construyendo poco a poco a lo largo del master, coged ese arquetipo de persona que vais a ayudar con vuestro contenido y luego con vuestro proyecto.</p>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/45ad3f1af90a468e8c6a2880c20e6bf16adc5e1452b640e295df14b583e8ef28-md.jpg" alt="Ejercicio autoestima" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+<p>Esto es un poco avanzado para el punto en el que estás, pero son términos que está bien que te vayan sonando. No te preocupes si esto no te sale, es lo que más vamos a trabajar a lo largo del máster.</p>
+
+<p><strong>Branding</strong></p>
+<p>Aquí nos metemos de lleno en la imagen de marca. Es sencillo, fíjate en quién te fijas y ve implementándolo en ti con tu estilo natural. Si te ves a ti mismo en tu mejor versión, ¿qué peinado lleva? ¿Cómo viste? ¿Qué complementos se pone?</p>
+<ul>
+  <li><strong>Tipo de letra.</strong></li>
+  <li><strong>Ropa.</strong></li>
+  <li><strong>Decoración.</strong></li>
+  <li><strong>Peinado.</strong></li>
+  <li><strong>Colores.</strong></li>
+  <li><strong>Estilo.</strong></li>
+  <li><strong>Energía.</strong></li>
+</ul>
+<p>Todas estas cualidades y más que se te vayan ocurriendo las puedes ir definiendo y poniendo en un documento con imágenes, recortes, anotaciones...</p>
+
+<p><strong>¿Qué te diferencia de los demás?</strong></p>
+<p>Haz una lista de tus cualidades, de las cosas que crees que eres mejor que el resto. Haz lo mismo con lo que creas que te cuesta más. Tener la virtud de poner luz en nuestras sombras nos hace tener más información para tomar mejores decisiones en un futuro.</p>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/d3ca0dbc6b804e0fa5c5e3cd8b1452c7612202d3bdd34eb38441697eb0d12457-md.jpg" alt="Ejercicio autoestima 2" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+
+<p><strong>Autoconocimiento</strong></p>
+<p>Te insto a que investigues sobre el eneagrama, los arquetipos de Carl Jung o cualquier herramienta de autoconocimiento, esto te dará una ventaja competitiva brutal.</p>
+
+<p><strong>Potencia tu marca</strong></p>
+<p>Mira en qué tribu social perteneces, quién es tu bando contrario, con quién te identificas. Esto puede definir mucho tu nicho y puedes hacer que tus seguidores te tengan como ídolo y referente en su causa.</p>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/0746927daba241e5a66447ca4d0ae9716f4cfe9901eb4e1ea1a02c847fac3ee3-md.jpg" alt="Tribu" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+
+<p><strong>Haz de tu vida una película.</strong></p>
+<p>Internet nos da una ventana al mundo, pero solo una ventana, cuida muy bien qué aparece, no porque tengas que impostar nada, ni ser una persona que no eres, sino que le pongas el alma a aquello que dejas ver por la ventana.</p>
+
+<p><strong>Haz tu carta de diseño humano</strong></p>
+<p><a href="https://freehumandesignchart.com/" target="_blank" rel="noopener noreferrer nofollow">https://freehumandesignchart.com/</a></p>
+<p>Y lo comentamos en la llamada personal.</p>
+
+<p><strong>Proyección</strong></p>
+<p>¿Quién te inspira? ¿Cuál es la cualidad? (Para este ejercicio ver el vídeo)</p>
+<img src="https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/99c0474c9e4f437e9f8f3931c8f1a66d856194f4da5147abb5972b2cbdc10b11-md.jpg" alt="Proyección" style="max-width:100%;border-radius:8px;margin:.75em 0"/>
+
+<p><strong>Visualiza</strong></p>
+<p>Este ejercicio es fundamental, visualiza dónde quieres estar, cuáles son tus objetivos, y siéntete como si ya los hubieras conseguido.</p>
+<p>Puedes hacerte una visual board o visualizarte cuando no estés haciendo ninguna tarea intelectual. Da igual como lo hagas, pero define con todo lujo de detalles dónde quieres llegar y qué quieres hacer.</p>"""
+        ),
+    ]
+
+    updated = 0
+    for course_title, lesson_title, html in _updates:
+        lesson = (Lesson.query
+                  .join(Section).join(Course)
+                  .filter(Course.title == course_title,
+                          Lesson.title == lesson_title)
+                  .first())
+        if lesson and len(lesson.description or '') < 500:
+            lesson.description = html
+            updated += 1
+
+    if updated:
+        db.session.commit()
+        print(f'[seed_desc] Updated {updated} lesson description(s).')
+
+
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
 @app.route('/admin/db-status')
 @login_required
@@ -1606,6 +1695,12 @@ with app.app_context():
         seed_db()
     except Exception as e:
         print(f'[seed] ERROR en seed_db: {e}')
+        db.session.rollback()
+
+    try:
+        seed_descriptions()
+    except Exception as e:
+        print(f'[seed_desc] ERROR en seed_descriptions: {e}')
         db.session.rollback()
 
     # Backfill points for existing lesson completions and comments
