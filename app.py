@@ -336,6 +336,7 @@ def new_post():
                         content=content, category_id=category_id)
             db.session.add(post)
             db.session.commit()
+            award_points(current_user.id, 'post', post.id, 4)
             return redirect(url_for('community'))
     return render_template('community/new_post.html', categories=categories)
 
@@ -1792,6 +1793,9 @@ with app.app_context():
         for c in Comment.query.all():
             if not PointEvent.query.filter_by(user_id=c.user_id, reason='comment', ref_id=c.id).first():
                 db.session.add(PointEvent(user_id=c.user_id, points=2, reason='comment', ref_id=c.id, created_at=c.created_at))
+        for p in Post.query.all():
+            if not PointEvent.query.filter_by(user_id=p.user_id, reason='post', ref_id=p.id).first():
+                db.session.add(PointEvent(user_id=p.user_id, points=4, reason='post', ref_id=p.id, created_at=p.created_at))
         db.session.commit()
     except Exception as e:
         print(f'[seed] ERROR en backfill points: {e}')
