@@ -1,10 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}Usuarios{% endblock %}
-{% block content_class %}max-w-4xl mx-auto{% endblock %}
+{% block content_class %}max-w-5xl mx-auto{% endblock %}
 
 {% block content %}
-<h1 class="text-xl font-bold mb-6" style="color:var(--text1)">👥 Usuarios</h1>
 
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('admin_dashboard') }}" class="text-sm hover:underline" style="color:var(--text3)">← Admin</a>
+    <span style="color:var(--text4)">/</span>
+    <h1 class="text-xl font-bold" style="color:var(--text1)">👥 Usuarios</h1>
+  </div>
+  <button onclick="document.getElementById('modal-nuevo').classList.remove('hidden')"
+          class="btn btn-primary btn-sm">
+    ➕ Nuevo usuario
+  </button>
+</div>
+
+<!-- Flash messages -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}{% for cat, msg in messages %}
 <div class="mb-4 px-4 py-3 rounded-lg text-sm border
@@ -14,7 +27,61 @@
 {% endfor %}{% endif %}
 {% endwith %}
 
-<!-- Solicitudes pendientes -->
+<!-- ═══ MODAL NUEVO USUARIO ═══════════════════════════════════════════════════ -->
+<div id="modal-nuevo" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,.45)">
+  <div class="w-full max-w-md rounded-2xl p-6 shadow-xl" style="background:var(--surface);border:1px solid var(--border)">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-bold" style="color:var(--text1)">➕ Crear nuevo usuario</h2>
+      <button onclick="document.getElementById('modal-nuevo').classList.add('hidden')"
+              class="text-xl leading-none" style="color:var(--text4)">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('admin_create_user') }}" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1" style="color:var(--text2)">Nombre de usuario *</label>
+        <input type="text" name="username" class="input" placeholder="ej: maria_garcia" required/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" style="color:var(--text2)">Email *</label>
+        <input type="email" name="email" class="input" placeholder="maria@ejemplo.com" required/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" style="color:var(--text2)">Contraseña inicial *</label>
+        <input type="text" name="password" class="input" placeholder="Mínimo 6 caracteres" required minlength="6"/>
+        <p class="text-xs mt-1" style="color:var(--text4)">El usuario podrá cambiarla desde su perfil.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2" style="color:var(--text2)">Rol</label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition hover:border-violet-300"
+                 style="border-color:var(--border);background:var(--hover-bg)">
+            <input type="radio" name="role" value="student" checked class="accent-violet-600"/>
+            <div>
+              <p class="text-sm font-semibold" style="color:var(--text1)">🎓 Alumno</p>
+              <p class="text-xs" style="color:var(--text4)">Acceso a cursos y comunidad</p>
+            </div>
+          </label>
+          <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition hover:border-violet-300"
+                 style="border-color:var(--border);background:var(--hover-bg)">
+            <input type="radio" name="role" value="admin" class="accent-violet-600"/>
+            <div>
+              <p class="text-sm font-semibold" style="color:var(--text1)">⚙️ Admin</p>
+              <p class="text-xs" style="color:var(--text4)">Acceso total al panel</p>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button"
+                onclick="document.getElementById('modal-nuevo').classList.add('hidden')"
+                class="btn btn-secondary flex-1">Cancelar</button>
+        <button type="submit" class="btn btn-primary flex-1">Crear usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ SOLICITUDES PENDIENTES ════════════════════════════════════════════════ -->
 {% if pending %}
 <div class="mb-8">
   <div class="flex items-center gap-2 mb-3">
@@ -25,15 +92,13 @@
     {% for user in pending %}
     <div class="rounded-xl p-4 shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
       <div class="flex items-start gap-4">
-        <!-- Avatar -->
-        <div class="w-14 h-14 rounded-full overflow-hidden bg-violet-100 flex-shrink-0 flex items-center justify-center">
+        <div class="w-12 h-12 rounded-full overflow-hidden bg-violet-100 flex-shrink-0 flex items-center justify-center">
           {% if user.avatar_data %}
           <img src="{{ url_for('serve_avatar', user_id=user.id) }}" class="w-full h-full object-cover"/>
           {% else %}
-          <span class="text-violet-600 text-xl font-bold">{{ user.initials }}</span>
+          <span class="text-violet-600 text-lg font-bold">{{ user.initials }}</span>
           {% endif %}
         </div>
-        <!-- Info -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <p class="font-bold text-sm" style="color:var(--text1)">{{ user.username }}</p>
@@ -41,10 +106,9 @@
             <p class="text-xs" style="color:var(--text4)">📅 {{ user.created_at.strftime('%d %b %Y · %H:%M') }}</p>
           </div>
           {% if user.bio %}
-          <p class="text-sm mt-1.5 leading-relaxed" style="color:var(--text2)">{{ user.bio }}</p>
+          <p class="text-sm mt-1" style="color:var(--text2)">{{ user.bio }}</p>
           {% endif %}
         </div>
-        <!-- Actions -->
         <div class="flex gap-2 flex-shrink-0">
           <form method="POST" action="{{ url_for('admin_approve_user', user_id=user.id) }}">
             <button type="submit" class="btn btn-primary btn-sm">✅ Aprobar</button>
@@ -61,67 +125,133 @@
 </div>
 {% endif %}
 
-<!-- Usuarios activos -->
+<!-- ═══ TABLA DE USUARIOS ══════════════════════════════════════════════════════ -->
 <div>
-  <h2 class="text-sm font-bold mb-3" style="color:var(--text1)">👤 Todos los usuarios ({{ active|length }})</h2>
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-bold" style="color:var(--text1)">
+      👤 Todos los usuarios
+      <span class="font-normal text-xs ml-1" style="color:var(--text4)">({{ active|length }})</span>
+    </h2>
+    <!-- Buscador rápido -->
+    <input id="search-users" type="text" placeholder="🔍 Buscar…"
+           class="input text-sm" style="max-width:200px;padding:6px 12px"
+           oninput="filterUsers(this.value)"/>
+  </div>
+
   <div class="rounded-xl overflow-hidden shadow-sm" style="background:var(--surface);border:1px solid var(--border)">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm" id="users-table">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:var(--hover-bg)">
           <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Usuario</th>
-          <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Email</th>
+          <th class="px-4 py-3 text-xs font-semibold text-left hidden sm:table-cell" style="color:var(--text3)">Email</th>
           <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Rol</th>
-          <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Estado</th>
-          <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Registro</th>
-          <th class="px-4 py-3 text-xs font-semibold text-left" style="color:var(--text3)">Acción</th>
+          <th class="px-4 py-3 text-xs font-semibold text-left hidden md:table-cell" style="color:var(--text3)">Estado</th>
+          <th class="px-4 py-3 text-xs font-semibold text-left hidden lg:table-cell" style="color:var(--text3)">Registro</th>
+          <th class="px-4 py-3 text-xs font-semibold text-right" style="color:var(--text3)">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {% for user in active %}
-        <tr class="hover:bg-[#fafafa] transition" style="border-bottom:1px solid var(--border)">
+        <tr class="user-row transition" style="border-bottom:1px solid var(--border)"
+            data-name="{{ user.username|lower }}" data-email="{{ user.email|lower }}">
+          <!-- Avatar + nombre -->
           <td class="px-4 py-3">
             <div class="flex items-center gap-3">
-              <div class="w-7 h-7 rounded-full overflow-hidden bg-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-violet-100 flex items-center justify-center text-violet-700 text-xs font-bold flex-shrink-0">
                 {% if user.avatar_data %}
                 <img src="{{ url_for('serve_avatar', user_id=user.id) }}" class="w-full h-full object-cover"/>
                 {% else %}{{ user.initials }}{% endif %}
               </div>
-              <span class="font-medium" style="color:var(--text1)">{{ user.username }}</span>
-              {% if user.id == current_user.id %}
-              <span class="text-[10px] px-1.5 py-0.5 rounded" style="background:var(--hover-bg);color:var(--text4)">tú</span>
-              {% endif %}
+              <div>
+                <p class="font-semibold leading-tight" style="color:var(--text1)">{{ user.username }}
+                  {% if user.id == current_user.id %}
+                  <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded" style="background:var(--hover-bg);color:var(--text4)">tú</span>
+                  {% endif %}
+                </p>
+                <p class="text-xs sm:hidden" style="color:var(--text3)">{{ user.email }}</p>
+              </div>
             </div>
           </td>
-          <td class="px-4 py-3" style="color:var(--text3)">{{ user.email }}</td>
+          <!-- Email -->
+          <td class="px-4 py-3 text-xs hidden sm:table-cell" style="color:var(--text3)">{{ user.email }}</td>
+          <!-- Rol -->
           <td class="px-4 py-3">
             <span class="text-xs px-2 py-0.5 rounded-full font-medium
-              {% if user.is_admin %}bg-violet-100 text-violet-700{% else %}bg-[#f4f4f5] text-[#71717a]{% endif %}">
+              {% if user.is_admin %}bg-violet-100 text-violet-700{% else %}bg-zinc-100 text-zinc-500{% endif %}">
               {{ '⚙️ Admin' if user.is_admin else '🎓 Alumno' }}
             </span>
           </td>
-          <td class="px-4 py-3">
+          <!-- Estado -->
+          <td class="px-4 py-3 hidden md:table-cell">
             <span class="text-xs px-2 py-0.5 rounded-full font-medium
-              {% if user.status == 'rejected' %}bg-red-100 text-red-600
-              {% else %}bg-green-100 text-green-700{% endif %}">
-              {{ '✕ Rechazado' if user.status == 'rejected' else '✓ Activo' }}
+              {% if user.status == 'active' %}bg-green-100 text-green-700
+              {% elif user.status == 'suspended' %}bg-orange-100 text-orange-600
+              {% elif user.status == 'rejected' %}bg-red-100 text-red-600
+              {% else %}bg-zinc-100 text-zinc-500{% endif %}">
+              {% if user.status == 'active' %}✓ Activo
+              {% elif user.status == 'suspended' %}⏸ Suspendido
+              {% elif user.status == 'rejected' %}✕ Rechazado
+              {% else %}{{ user.status }}{% endif %}
             </span>
           </td>
-          <td class="px-4 py-3 text-xs" style="color:var(--text4)">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+          <!-- Fecha -->
+          <td class="px-4 py-3 text-xs hidden lg:table-cell" style="color:var(--text4)">
+            {{ user.created_at.strftime('%d/%m/%Y') }}
+          </td>
+          <!-- Acciones -->
           <td class="px-4 py-3">
             {% if user.id != current_user.id %}
-            <form method="POST" action="{{ url_for('admin_toggle_role', user_id=user.id) }}"
-                  onsubmit="return confirm('¿Cambiar rol de {{ user.username }}?')">
-              <button type="submit" class="btn btn-secondary btn-sm">
-                {{ 'Quitar admin' if user.is_admin else 'Hacer admin' }}
-              </button>
-            </form>
+            <div class="flex gap-2 justify-end flex-wrap">
+              <!-- Cambiar rol -->
+              <form method="POST" action="{{ url_for('admin_toggle_role', user_id=user.id) }}"
+                    onsubmit="return confirm('¿Cambiar rol de {{ user.username }}?')">
+                <button type="submit" class="btn btn-secondary btn-sm whitespace-nowrap"
+                        title="{{ 'Quitar privilegios admin' if user.is_admin else 'Dar privilegios admin' }}">
+                  {{ '⬇ Quitar admin' if user.is_admin else '⬆ Hacer admin' }}
+                </button>
+              </form>
+              <!-- Suspender / Activar -->
+              <form method="POST" action="{{ url_for('admin_toggle_status', user_id=user.id) }}"
+                    onsubmit="return confirm('¿{{ 'Reactivar' if user.status != 'active' else 'Suspender' }} a {{ user.username }}?')">
+                <button type="submit" class="btn btn-secondary btn-sm whitespace-nowrap"
+                        style="color:{% if user.status == 'active' %}#f59e0b{% else %}#22c55e{% endif %}">
+                  {{ '▶ Activar' if user.status != 'active' else '⏸ Suspender' }}
+                </button>
+              </form>
+              <!-- Eliminar -->
+              <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                    onsubmit="return confirm('¿ELIMINAR permanentemente a {{ user.username }}? Esta acción no se puede deshacer.')">
+                <button type="submit" class="btn btn-secondary btn-sm" style="color:#ef4444" title="Eliminar usuario">
+                  🗑
+                </button>
+              </form>
+            </div>
+            {% else %}
+            <p class="text-xs text-right pr-2" style="color:var(--text4)">—</p>
             {% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    {% if not active %}
+    <p class="text-sm text-center py-10" style="color:var(--text4)">No hay usuarios todavía.</p>
+    {% endif %}
   </div>
 </div>
+
+<script>
+function filterUsers(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.user-row').forEach(row => {
+    const match = row.dataset.name.includes(q) || row.dataset.email.includes(q);
+    row.style.display = match ? '' : 'none';
+  });
+}
+// Cerrar modal al pulsar fuera
+document.getElementById('modal-nuevo').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+</script>
 
 {% endblock %}

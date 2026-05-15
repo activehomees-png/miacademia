@@ -979,6 +979,67 @@ def admin_toggle_role(user_id):
         db.session.commit()
     return redirect(url_for('admin_users'))
 
+@app.route('/admin/usuarios/<int:user_id>/suspender', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_status(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id != current_user.id:
+        user.status = 'active' if user.status != 'active' else 'suspended'
+        db.session.commit()
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/usuarios/<int:user_id>/eliminar', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('No puedes eliminar tu propia cuenta.', 'error')
+        return redirect(url_for('admin_users'))
+    # Delete related data
+    from models import Post, Comment, Enrollment, LessonProgress, Notification, PointEvent
+    LessonProgress.query.filter_by(user_id=user.id).delete()
+    Enrollment.query.filter_by(user_id=user.id).delete()
+    Notification.query.filter_by(user_id=user.id).delete()
+    PointEvent.query.filter_by(user_id=user.id).delete()
+    for post in Post.query.filter_by(user_id=user.id).all():
+        Comment.query.filter_by(post_id=post.id).delete()
+        db.session.delete(post)
+    Comment.query.filter_by(user_id=user.id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'Usuario eliminado correctamente.', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/usuarios/nuevo', methods=['POST'])
+@login_required
+@admin_required
+def admin_create_user():
+    username = request.form.get('username', '').strip()
+    email    = request.form.get('email', '').strip().lower()
+    password = request.form.get('password', '').strip()
+    role     = request.form.get('role', 'student')
+
+    if not username or not email or not password:
+        flash('Todos los campos son obligatorios.', 'error')
+        return redirect(url_for('admin_users'))
+    if User.query.filter_by(username=username).first():
+        flash(f'El nombre de usuario "{username}" ya está en uso.', 'error')
+        return redirect(url_for('admin_users'))
+    if User.query.filter_by(email=email).first():
+        flash(f'El email "{email}" ya está registrado.', 'error')
+        return redirect(url_for('admin_users'))
+    if role not in ('student', 'admin'):
+        role = 'student'
+
+    new_user = User(username=username, email=email, role=role, status='active')
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    flash(f'✅ Usuario "{username}" creado correctamente como {"admin" if role == "admin" else "alumno"}.', 'success')
+    return redirect(url_for('admin_users'))
+
 # ── ERROR PAGES ───────────────────────────────────────────────────────────────
 
 @app.errorhandler(403)
