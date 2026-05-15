@@ -1083,6 +1083,64 @@ def seed_db():
         db.session.commit()
         print('[seed] FASE 1 course created with all sections and lessons.')
 
+    # ── FASE 2 course import ──────────────────────────────────────────────────
+    if not Course.query.filter_by(title='FASE 2. Creación del contenido.').first():
+        fase2 = Course(
+            title='FASE 2. Creación del contenido.',
+            subtitle='Equipo, cámara, iluminación, guion y edición',
+            description='Crea tu contenido de forma profesional aunque no sepas por donde empezar.',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(fase2)
+        db.session.flush()
+
+        _sections2 = [
+            ('¡Empezamos!', [
+                ('Introducción.', 'https://vimeo.com/930832256', 1, ''),
+            ]),
+            ('1. ¿Qué equipo necesito?', [
+                ('1.1 Equipo Básico.', 'https://vimeo.com/930832331', 3, ''),
+                ('1.2 Equipo intermedio.', 'https://vimeo.com/930832438', 4, ''),
+                ('1.3 Equipo avanzado.', 'https://vimeo.com/930832564', 3, ''),
+            ]),
+            ('2. Cómo funciona una cámara.', [
+                ('2.1 Fundamentos básicos de la fotografía.', 'https://vimeo.com/933627600', 6, ''),
+                ('2.2 Cómo funciona la cámara del móvil.', 'https://vimeo.com/935942415', 3, ''),
+                ('2.3 Partes de una cámara.', 'https://vimeo.com/939183805', 6, ''),
+                ('2.4 Todo lo que tienes que saber sobre el audio.', 'https://vimeo.com/944079519', 8, ''),
+            ]),
+            ('3. La iluminación.', [
+                ('3.2 Esquema básico de iluminación.', 'https://vimeo.com/1005879073', 10, ''),
+            ]),
+            ('4. Creación del guion.', [
+                ('4.1 Empezando a crear nuestro guion.', 'https://vimeo.com/1043141856', 18, ''),
+            ]),
+            ('5. Vamos a grabarnos.', [
+                ('5.1 Fundamentos básicos del vídeo.', '', 0, ''),
+                ('5.2 Todo listo para grabarnos.', '', 0, ''),
+                ('5.3 Contenidos y organización.', '', 0, ''),
+                ('5.4 ¿Cómo hablar nuestro guion?', '', 0, ''),
+            ]),
+            ('Edición en Capcut', [
+                ('Edita con Capcut tus vídeos.', 'https://vimeo.com/925901001', 13, ''),
+                ('Añadiendo subtítulos a tus vídeos con Capcut.', 'https://vimeo.com/925904432', 12, ''),
+            ]),
+        ]
+
+        for s_order, (sec_title, lessons) in enumerate(_sections2, 1):
+            sec = Section(course_id=fase2.id, title=sec_title, order=s_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url, l_dur, l_desc) in enumerate(lessons, 1):
+                db.session.add(Lesson(
+                    section_id=sec.id, title=l_title,
+                    video_url=l_url, duration_min=l_dur,
+                    description=l_desc, order=l_order,
+                ))
+        db.session.commit()
+        print('[seed] FASE 2 course created with all sections and lessons.')
+
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
     db.create_all()
