@@ -89,18 +89,43 @@
     {% if current_lesson %}
 
     <!-- Video player -->
-    {% if current_lesson.video_url %}
-    <div class="aspect-video bg-black rounded-xl overflow-hidden mb-4 shadow-sm">
-      <iframe src="{{ current_lesson.video_url | youtube_embed }}"
-              class="w-full h-full" allowfullscreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-      </iframe>
+    <div class="relative mb-4">
+      <div id="video-wrap" class="aspect-video bg-black rounded-xl overflow-hidden shadow-sm">
+        {% if current_lesson.video_url %}
+        <iframe id="video-iframe" src="{{ current_lesson.video_url | youtube_embed }}"
+                class="w-full h-full" allowfullscreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+        </iframe>
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center">
+          <p class="text-[#71717a] text-sm">Sin vídeo — añade un link abajo</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Admin: edit video button (top-right corner over video) -->
+      {% if current_user.is_admin %}
+      <button onclick="toggleVideoEdit()" title="Cambiar vídeo"
+              class="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                     bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition">
+        🎬 Cambiar vídeo
+      </button>
+
+      <!-- Video URL edit panel -->
+      <div id="video-edit" class="hidden mt-2 bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
+        <p class="text-xs text-[#71717a] mb-2">Pega la URL de Vimeo, YouTube u otro servicio compatible.</p>
+        <div class="flex gap-2">
+          <input id="video-url-input" type="url"
+                 value="{{ current_lesson.video_url }}"
+                 placeholder="https://vimeo.com/… o https://youtu.be/…"
+                 class="input flex-1 text-sm"/>
+          <button onclick="saveVideo()" class="btn btn-primary btn-sm whitespace-nowrap">💾 Guardar</button>
+          <button onclick="toggleVideoEdit()" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+        <p class="text-[10px] text-[#a1a1aa] mt-1.5">Formatos válidos: vimeo.com/ID, youtu.be/ID, youtube.com/watch?v=ID</p>
+      </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="aspect-video bg-[#1a1a1a] rounded-xl flex items-center justify-center mb-4 shadow-sm">
-      <p class="text-[#71717a] text-sm">Sin vídeo disponible</p>
-    </div>
-    {% endif %}
 
     <!-- Lesson info card -->
     <div class="bg-white border border-[#e4e4e7] rounded-xl shadow-sm overflow-hidden">
@@ -432,6 +457,44 @@ async function saveEdit() {
 
 function toggleFilesPanel() {
   document.getElementById('files-panel').classList.toggle('hidden');
+}
+
+function toggleVideoEdit() {
+  document.getElementById('video-edit').classList.toggle('hidden');
+}
+
+async function saveVideo() {
+  const url = document.getElementById('video-url-input').value.trim();
+  try {
+    const fd = new FormData();
+    fd.append('video_url', url);
+    await fetch('{{ url_for("admin_save_lesson_video", lesson_id=current_lesson.id) }}',
+                {method:'POST', body:fd});
+    // Update iframe src without reloading
+    const wrap = document.getElementById('video-wrap');
+    if (url) {
+      // Convert to embed URL client-side (basic)
+      let embed = url;
+      if (url.includes('vimeo.com') && !url.includes('player.vimeo.com')) {
+        const parts = url.split('vimeo.com/')[1].split('?')[0].split('/');
+        embed = parts[1]
+          ? `https://player.vimeo.com/video/${parts[0]}?h=${parts[1]}`
+          : `https://player.vimeo.com/video/${parts[0]}`;
+      } else if (url.includes('youtu.be/')) {
+        const vid = url.split('youtu.be/')[1].split('?')[0];
+        embed = `https://www.youtube.com/embed/${vid}`;
+      } else if (url.includes('v=')) {
+        const vid = url.split('v=')[1].split('&')[0];
+        embed = `https://www.youtube.com/embed/${vid}`;
+      }
+      wrap.innerHTML = `<iframe src="${embed}" class="w-full h-full" allowfullscreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    } else {
+      wrap.innerHTML = '<div class="w-full h-full flex items-center justify-center"><p class="text-[#71717a] text-sm">Sin vídeo</p></div>';
+    }
+    toggleVideoEdit();
+    showToast('✅ Vídeo actualizado');
+  } catch(e) { showToast('⚠️ Error al guardar el vídeo'); }
 }
 </script>
 {% endif %}

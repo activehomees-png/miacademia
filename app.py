@@ -795,6 +795,16 @@ def admin_save_lesson_description(lesson_id):
                             leccion=lesson_id))
 
 
+@app.route('/admin/leccion/<int:lesson_id>/video', methods=['POST'])
+@login_required
+@admin_required
+def admin_save_lesson_video(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+    lesson.video_url = request.form.get('video_url', '').strip()
+    db.session.commit()
+    return ('', 204)   # AJAX — no redirect needed
+
+
 @app.route('/admin/leccion/<int:lesson_id>/imagen', methods=['POST'])
 @login_required
 @admin_required
