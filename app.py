@@ -1141,6 +1141,34 @@ def seed_db():
         db.session.commit()
         print('[seed] FASE 2 course created with all sections and lessons.')
 
+# ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
+@app.route('/admin/db-status')
+@login_required
+def admin_db_status():
+    if current_user.role != 'admin':
+        abort(403)
+    db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if 'postgresql' in db_url or 'postgres' in db_url:
+        db_type = '✅ PostgreSQL (datos permanentes)'
+    else:
+        db_type = '⚠️ SQLite (datos SE PIERDEN en cada despliegue)'
+    try:
+        user_count    = User.query.count()
+        comment_count = Comment.query.count()
+        course_count  = Course.query.count()
+        users_with_avatar = User.query.filter(User.avatar_data != None).count()
+    except Exception as e:
+        return f'<pre>Error BD: {e}</pre>'
+    return f'''<pre style="font-family:monospace;padding:20px">
+Base de datos: {db_type}
+URL tipo: {"postgresql" if "postgresql" in db_url else "sqlite"}
+
+Usuarios:        {user_count}
+Con foto perfil: {users_with_avatar}
+Comentarios:     {comment_count}
+Cursos:          {course_count}
+</pre><a href="{url_for("admin_dashboard")}">← Volver al panel</a>'''
+
 # Inicializar BD siempre (tanto con gunicorn como directo)
 with app.app_context():
     db.create_all()
@@ -1178,6 +1206,18 @@ with app.app_context():
             conn.commit()
     except Exception:
         pass
+    # ── Diagnóstico de base de datos ──────────────────────────────────────────
+    _db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if 'postgresql' in _db_uri:
+        print('=' * 60)
+        print('[DB] ✅ POSTGRESQL — datos PERSISTENTES')
+        print('=' * 60)
+    else:
+        print('=' * 60)
+        print('[DB] ⚠️  SQLITE — datos se pierden en cada despliegue.')
+        print('[DB]    Asegúrate de tener DATABASE_URL en Railway → Variables.')
+        print('=' * 60)
+
     seed_db()
     # Backfill points for existing lesson completions and comments
     for lp in LessonProgress.query.all():
