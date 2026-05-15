@@ -1549,6 +1549,13 @@ def seed_descriptions():
 
 # Map of (course_title, lesson_title) → html description
 LESSON_DESCRIPTIONS = {
+    ('FASE 1 Crea tu Marca Personal', '1.1 Bienvenida.'): """<h2>¡Bienvenido!</h2>
+<p>Estás en el lugar indicado para cambiar tu vida.</p>
+<p>Lo más difícil ya lo has hecho, tener la humildad de aprender y formarte, así que mis más sincera enhorabuena.</p>
+<p>Si tienes cualquier duda puedes anotarla en este formulario: <a href="https://forms.gle/FQ3L3W7E8Q8sNtaH8" target="_blank" rel="noopener noreferrer">https://forms.gle/FQ3L3W7E8Q8sNtaH8</a> — las dudas se resuelven los martes a las 20h (hora de España).</p>
+<p>Tu camino empieza aquí y va a ser de dentro hacia afuera.</p>
+<p><strong>VAMOS.</strong></p>""",
+
     ('FASE 1 Crea tu Marca Personal', '3.1 Conócete a ti mismo, define tu identidad.'): """<p>Los fundamentos para crear una Marca Personal se basan en:</p>
 <ul>
   <li><strong>La identidad:</strong> Todo aquello que te define, desde tu manera de hablar, tu vestimenta, el color que utilizas para tus videos, tu peinado... También todo lo que está dentro de ti, como tu seguridad, la dureza del mensaje, la dulzura... Todo esto se puede entrenar y moldear para ir definiendo nuestra identidad.</li>
