@@ -137,6 +137,12 @@ def login():
         pw    = request.form.get('password', '')
         user  = User.query.filter_by(email=email).first()
         if user and user.check_password(pw):
+            if getattr(user, 'status', 'active') == 'pending':
+                flash('Tu cuenta está pendiente de aprobación por un administrador. Te avisaremos pronto.', 'error')
+                return render_template('auth/login.html')
+            if getattr(user, 'status', 'active') == 'rejected':
+                flash('Tu solicitud de acceso ha sido denegada. Contacta con el administrador.', 'error')
+                return render_template('auth/login.html')
             login_user(user, remember=True)
             return redirect(request.args.get('next') or url_for('community'))
         flash('Email o contraseña incorrectos.', 'error')
@@ -150,20 +156,38 @@ def register():
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip().lower()
         pw       = request.form.get('password', '')
+        bio      = request.form.get('bio', '').strip()
+        avatar   = request.files.get('avatar')
         if len(pw) < 6:
             flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+        elif not bio:
+            flash('Por favor escribe una breve descripción sobre ti.', 'error')
+        elif not avatar or not avatar.filename:
+            flash('La foto de perfil es obligatoria.', 'error')
         elif User.query.filter_by(email=email).first():
             flash('Ese email ya está registrado.', 'error')
         elif User.query.filter_by(username=username).first():
             flash('Ese nombre de usuario ya existe.', 'error')
         else:
-            user = User(username=username, email=email)
+            avatar_data = avatar.read()
+            if len(avatar_data) > 4 * 1024 * 1024:
+                flash('La imagen no puede superar 4 MB.', 'error')
+                return render_template('auth/register.html')
+            user = User(username=username, email=email, bio=bio,
+                        avatar_data=avatar_data,
+                        avatar_mime=avatar.mimetype or 'image/jpeg',
+                        status='pending')
             user.set_password(pw)
             db.session.add(user)
             db.session.commit()
-            login_user(user)
-            flash('¡Bienvenido a la academia!', 'success')
-            return redirect(url_for('community'))
+            # Notify all admins
+            admins = User.query.filter_by(role='admin').all()
+            for admin in admins:
+                notify(admin.id, 'new_user',
+                       f'🙋 Nueva solicitud de acceso de {username} ({email})',
+                       '/admin/usuarios')
+            db.session.commit()
+            return render_template('auth/pending.html')
     return render_template('auth/register.html')
 
 @app.route('/logout')
@@ -852,8 +876,31 @@ def admin_delete_live_class(class_id):
 @login_required
 @admin_required
 def admin_users():
-    users = User.query.order_by(User.created_at.desc()).all()
-    return render_template('admin/users.html', users=users)
+    pending = User.query.filter_by(status='pending').order_by(User.created_at.desc()).all()
+    active  = User.query.filter(User.status != 'pending').order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', pending=pending, active=active)
+
+@app.route('/admin/usuarios/<int:user_id>/aprobar', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.status = 'active'
+    notify(user.id, 'approved',
+           '✅ Tu acceso a la plataforma ha sido aprobado. ¡Ya puedes entrar!', '/')
+    db.session.commit()
+    flash(f'{user.username} ha sido aprobado.', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/usuarios/<int:user_id>/rechazar', methods=['POST'])
+@login_required
+@admin_required
+def admin_reject_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.status = 'rejected'
+    db.session.commit()
+    flash(f'{user.username} ha sido rechazado.', 'success')
+    return redirect(url_for('admin_users'))
 
 @app.route('/admin/usuarios/<int:user_id>/rol', methods=['POST'])
 @login_required
@@ -917,6 +964,7 @@ with app.app_context():
             conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP"))
             conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS avatar_data BYTEA"))
             conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS avatar_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'"))
             # site_settings: binary banner
             conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_data BYTEA"))
             conn.execute(text("ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS community_image_mime VARCHAR(50) DEFAULT 'image/jpeg'"))

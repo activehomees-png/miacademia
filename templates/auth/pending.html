@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Solicitud enviada · Marca Atractora</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{background:#f4f4f5;color:#18181b;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body class="p-4">
+<div class="w-full max-w-md text-center">
+  <div class="bg-white border border-[#e4e4e7] rounded-2xl p-10 shadow-sm">
+    <div class="text-6xl mb-4">⏳</div>
+    <h1 class="text-xl font-bold text-[#18181b] mb-2">Solicitud enviada</h1>
+    <p class="text-[#71717a] text-sm leading-relaxed mb-6">
+      Tu solicitud ha sido recibida y está pendiente de revisión por un administrador.
+      En cuanto sea aprobada recibirás acceso a la plataforma.
+    </p>
+    <div class="bg-violet-50 border border-violet-100 rounded-xl p-4 mb-6">
+      <p class="text-sm text-violet-700 font-medium">¿Ya te han aprobado?</p>
+      <a href="{{ url_for('login') }}"
+         class="mt-2 inline-block bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm">
+        Iniciar sesión
+      </a>
+    </div>
+    <p class="text-xs text-[#a1a1aa]">Si tienes dudas contacta con el administrador.</p>
+  </div>
+</div>
+</body>
+</html>

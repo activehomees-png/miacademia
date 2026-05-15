@@ -2,12 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Crear cuenta</title>
+<title>Solicitar acceso · Marca Atractora</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body{background:#f4f4f5;color:#18181b;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
   .input{background:#fff;border:1px solid #d4d4d8;border-radius:8px;padding:11px 14px;color:#18181b;font-size:14px;width:100%;outline:none;box-sizing:border-box;}
   .input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1);}
+  textarea.input{resize:vertical;min-height:80px;}
 </style>
 </head>
 <body class="p-4">
@@ -15,7 +16,7 @@
   <div class="text-center mb-8">
     <div class="w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🎓</div>
     <h1 class="text-2xl font-bold text-[#18181b]">Marca Atractora</h1>
-    <p class="text-[#71717a] text-sm mt-1">Crea tu cuenta gratis</p>
+    <p class="text-[#71717a] text-sm mt-1">Solicita tu acceso a la comunidad</p>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -31,22 +32,40 @@
   {% endwith %}
 
   <div class="bg-white border border-[#e4e4e7] rounded-2xl p-8 shadow-sm">
-    <form method="POST" class="space-y-4">
+    <form method="POST" enctype="multipart/form-data" class="space-y-4">
+
+      <!-- Avatar obligatorio -->
+      <div class="flex flex-col items-center gap-3 pb-2">
+        <div id="avatar-preview" class="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center text-3xl overflow-hidden">
+          📷
+        </div>
+        <label class="cursor-pointer text-sm text-violet-600 hover:text-violet-700 font-medium">
+          Subir foto de perfil *
+          <input type="file" name="avatar" accept="image/*" required class="hidden" onchange="previewAvatar(event)"/>
+        </label>
+        <p class="text-xs text-[#a1a1aa]">JPG o PNG · Máx. 4 MB · Obligatoria</p>
+      </div>
+
       <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Nombre de usuario</label>
-        <input type="text" name="username" class="input" placeholder="tunombre" required autofocus minlength="3"/>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Nombre de usuario *</label>
+        <input type="text" name="username" class="input" placeholder="tunombre" required minlength="3"/>
       </div>
       <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Email</label>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Email *</label>
         <input type="email" name="email" class="input" placeholder="tu@email.com" required/>
       </div>
       <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Contraseña</label>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Contraseña *</label>
         <input type="password" name="password" class="input" placeholder="Mínimo 6 caracteres" required minlength="6"/>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Cuéntanos sobre ti *</label>
+        <textarea name="bio" class="input" placeholder="¿Quién eres y por qué quieres unirte?" required></textarea>
+      </div>
+
       <button type="submit"
         class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-lg transition text-sm mt-2">
-        Crear cuenta
+        Enviar solicitud de acceso
       </button>
     </form>
     <p class="text-center text-sm text-[#71717a] mt-5">
@@ -55,5 +74,18 @@
     </p>
   </div>
 </div>
+
+<script>
+function previewAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('avatar-preview');
+    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+</script>
 </body>
 </html>

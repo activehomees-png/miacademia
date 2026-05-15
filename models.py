@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     last_seen    = db.Column(db.DateTime, nullable=True)
     avatar_data  = db.Column(db.LargeBinary, nullable=True)
     avatar_mime  = db.Column(db.String(50), default='image/jpeg')
+    status       = db.Column(db.String(20), default='active')  # 'pending' | 'active' | 'rejected'
 
     posts        = db.relationship('Post',    backref='author', lazy=True)
     comments     = db.relationship('Comment', backref='author', lazy=True)
