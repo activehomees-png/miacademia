@@ -129,6 +129,10 @@
        class="tab-link {% if request.endpoint=='leaderboard' %}active{% endif %}">
       🏆 Clasificación
     </a>
+    <a href="{{ url_for('members') }}"
+       class="tab-link {% if request.endpoint=='members' %}active{% endif %}">
+      👥 Miembros
+    </a>
     {% if current_user.is_admin %}
     <a href="{{ url_for('admin_dashboard') }}"
        class="tab-link {% if 'admin' in (request.endpoint or '') %}active{% endif %}">

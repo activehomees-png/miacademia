@@ -1040,6 +1040,40 @@ def admin_create_user():
     flash(f'✅ Usuario "{username}" creado correctamente como {"admin" if role == "admin" else "alumno"}.', 'success')
     return redirect(url_for('admin_users'))
 
+# ── PÁGINA PÚBLICA DE MIEMBROS ────────────────────────────────────────────────
+
+@app.route('/miembros')
+@login_required
+def members():
+    users = (User.query
+             .filter(User.status == 'active')
+             .order_by(User.created_at.asc())
+             .all())
+    return render_template('members.html', members=users)
+
+@app.route('/miembros/<int:user_id>/rol', methods=['POST'])
+@login_required
+@admin_required
+def members_toggle_role(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id != current_user.id:
+        user.role = 'admin' if user.role == 'student' else 'student'
+        db.session.commit()
+        flash(f'{"⚙️ " + user.username + " ahora es admin." if user.role == "admin" else "🎓 " + user.username + " ya no es admin."}', 'success')
+    return redirect(url_for('members'))
+
+@app.route('/miembros/<int:user_id>/expulsar', methods=['POST'])
+@login_required
+@admin_required
+def members_suspend(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id != current_user.id:
+        user.status = 'suspended' if user.status == 'active' else 'active'
+        db.session.commit()
+        action = 'suspendido' if user.status == 'suspended' else 'reactivado'
+        flash(f'Usuario {user.username} {action}.', 'success')
+    return redirect(url_for('members'))
+
 # ── ERROR PAGES ───────────────────────────────────────────────────────────────
 
 @app.errorhandler(403)
