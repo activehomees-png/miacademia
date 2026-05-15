@@ -70,7 +70,7 @@
                 {% if is_active %}font-semibold text-[#18181b]
                 {% elif is_done %}text-[#52525b]
                 {% else %}text-[#71717a]{% endif %}">
-                {{ s_idx }}.{{ l_idx }} {{ lesson.title }}
+                {{ lesson.title }}
               </p>
               {% if lesson.duration_min %}
               <p class="text-[10px] text-[#a1a1aa]">{{ lesson.duration_min }} min</p>
