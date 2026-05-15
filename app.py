@@ -976,16 +976,6 @@ def forbidden(e):
 def not_found(e):
     return render_template('errors/404.html'), 404
 
-@app.route('/setup-samuel-admin-x7k2')
-def setup_samuel_admin():
-    user = User.query.filter_by(email='samuelgavilant@gmail.com').first()
-    if not user:
-        return 'Usuario no encontrado', 404
-    user.role = 'admin'
-    user.status = 'active'
-    user.set_password('Admin1234!')
-    db.session.commit()
-    return '✅ Hecho. Entra con samuelgavilant@gmail.com y Admin1234!'
 
 # ── INIT ──────────────────────────────────────────────────────────────────────
 
