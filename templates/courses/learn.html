@@ -181,15 +181,40 @@
         </div>
       </div>
 
-      <!-- TAB: Contenido (TinyMCE) -->
+      <!-- TAB: Contenido (Quill editor) -->
       <div id="admin-tab-content" class="p-5">
         <p class="text-xs text-[#71717a] mb-3">Escribe el texto de esta clase, añade fotos, listas, links… Se muestra debajo del vídeo para todos los alumnos.</p>
-        <form method="POST" action="{{ url_for('admin_save_lesson_description', lesson_id=current_lesson.id) }}">
-          <textarea id="lesson-description" name="description"
-                    class="w-full border border-[#e4e4e7] rounded-lg p-2 text-sm"
-                    style="min-height:300px">{{ current_lesson.description }}</textarea>
+        <form id="desc-form" method="POST" action="{{ url_for('admin_save_lesson_description', lesson_id=current_lesson.id) }}">
+          <!-- Quill toolbar + editor -->
+          <div id="quill-toolbar">
+            <span class="ql-formats">
+              <select class="ql-header"><option value="2">Título</option><option value="3">Subtítulo</option><option selected></option></select>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-bold"></button>
+              <button class="ql-italic"></button>
+              <button class="ql-underline"></button>
+            </span>
+            <span class="ql-formats">
+              <select class="ql-color"></select>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-list" value="ordered"></button>
+              <button class="ql-list" value="bullet"></button>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-link"></button>
+              <button class="ql-image" title="Insertar imagen"></button>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-clean"></button>
+            </span>
+          </div>
+          <div id="quill-editor" style="height:350px;background:white;font-size:14px;"></div>
+          <!-- Hidden field that gets filled on submit -->
+          <input type="hidden" name="description" id="desc-hidden"/>
           <div class="flex items-center justify-between mt-3">
-            <span class="text-[11px] text-[#a1a1aa]">Puedes pegar imágenes directamente o arrastrarlas al editor</span>
+            <span class="text-[11px] text-[#a1a1aa]">📷 Usa el botón de imagen para insertar fotos</span>
             <button type="submit" class="btn btn-primary">💾 Guardar contenido</button>
           </div>
         </form>
@@ -342,6 +367,16 @@ const _timer = setInterval(() => {
 .admin-tab { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.1); }
 .admin-tab:hover { color: white; background: rgba(255,255,255,0.2); }
 .admin-tab.active { color: #7c3aed; background: white; }
+
+/* Quill overrides */
+#quill-editor { border:1px solid #e4e4e7; border-top:none; border-radius:0 0 8px 8px; }
+#quill-toolbar { border:1px solid #e4e4e7; border-radius:8px 8px 0 0; background:#fafafa; }
+.ql-editor { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; color:#52525b; line-height:1.7; min-height:300px; }
+.ql-editor h2 { font-size:1.15rem; font-weight:700; color:#18181b; margin:.6em 0 .3em; }
+.ql-editor h3 { font-size:1rem; font-weight:700; color:#18181b; margin:.5em 0 .3em; }
+.ql-editor p  { margin:0 0 .6em; }
+.ql-editor img { max-width:100%; border-radius:8px; }
+.ql-editor a  { color:#7c3aed; }
 </style>
 
 <!-- Tab switcher -->
@@ -354,34 +389,52 @@ function showAdminTab(tab) {
 }
 </script>
 
-<!-- TinyMCE -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- Quill (free, no API key) -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
-tinymce.init({
-  selector: '#lesson-description',
-  language: 'es',
-  height: 450,
-  menubar: true,
-  plugins: 'lists link image media table code emoticons fullscreen',
-  toolbar:
-    'undo redo | blocks | bold italic underline | forecolor backcolor | ' +
-    'alignleft aligncenter alignright | bullist numlist | ' +
-    'link image media | table emoticons | code fullscreen',
-  images_upload_url: '{{ url_for("admin_upload_lesson_image", lesson_id=current_lesson.id) }}',
-  images_upload_credentials: true,
-  automatic_uploads: true,
-  file_picker_types: 'image',
-  image_advtab: true,
-  paste_data_images: true,
-  content_style: `
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           font-size: 14px; color: #52525b; line-height: 1.7; padding: 16px; }
-    img  { max-width: 100%; border-radius: 8px; }
-    h1,h2,h3 { color: #18181b; }
-    p { margin: 0 0 .75em; }
-    a { color: #7c3aed; }
-  `,
-});
+(function() {
+  const quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: '#quill-toolbar'
+    }
+  });
+
+  // Load existing content
+  const existing = {{ current_lesson.description | tojson }};
+  if (existing) quill.root.innerHTML = existing;
+
+  // Custom image upload handler → sends to our server, inserts URL
+  quill.getModule('toolbar').addHandler('image', function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.click();
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await fetch('{{ url_for("admin_upload_lesson_image", lesson_id=current_lesson.id) }}', {
+          method: 'POST', body: fd
+        });
+        const data = await r.json();
+        if (data.location) {
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', data.location);
+          quill.setSelection(range.index + 1);
+        }
+      } catch(e) { alert('Error subiendo imagen: ' + e); }
+    };
+  });
+
+  // On submit → copy editor HTML into hidden field
+  document.getElementById('desc-form').addEventListener('submit', function() {
+    document.getElementById('desc-hidden').value = quill.root.innerHTML;
+  });
+})();
 </script>
 {% endif %}
 
