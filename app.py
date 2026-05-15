@@ -1514,14 +1514,42 @@ def seed_db():
 
 
 def seed_descriptions():
-    """Populate lesson descriptions with full rich HTML content (text + images from Skool)."""
+    """Populate lesson descriptions using LESSON_DESCRIPTIONS dict via raw SQL."""
+    updated = 0
+    try:
+        with db.engine.connect() as conn:
+            for (course_title, lesson_title), html in LESSON_DESCRIPTIONS.items():
+                row = conn.execute(text(
+                    """SELECT l.id, l.description FROM lesson l
+                       JOIN section s ON s.id = l.section_id
+                       JOIN course c ON c.id = s.course_id
+                       WHERE c.title = :ct AND l.title = :lt
+                       LIMIT 1"""
+                ), {'ct': course_title, 'lt': lesson_title}).fetchone()
+                if row is None:
+                    print(f'[seed_desc] WARNING - not found: {lesson_title!r}')
+                    continue
+                lesson_id, current_desc = row[0], row[1] or ''
+                if len(current_desc) < 500:  # not yet rich
+                    conn.execute(text(
+                        'UPDATE lesson SET description = :html WHERE id = :lid'
+                    ), {'html': html, 'lid': lesson_id})
+                    updated += 1
+                    print(f'[seed_desc] Updated id={lesson_id}: {lesson_title}')
+            if updated:
+                conn.commit()
+                print(f'[seed_desc] Done — {updated} lesson(s) updated.')
+            else:
+                print('[seed_desc] All descriptions already rich.')
+    except Exception as e:
+        print(f'[seed_desc] ERROR: {e}')
 
-    _updates = [
-        # ── FASE 1 · 3.1 Conócete a ti mismo, define tu identidad. ───────────
-        (
-            'FASE 1 Crea tu Marca Personal',
-            '3.1 Conócete a ti mismo, define tu identidad.',
-            """<p>Los fundamentos para crear una Marca Personal se basan en:</p>
+
+# ── Forzar actualización de descripciones (solo admin) ───────────────────────
+
+# Map of (course_title, lesson_title) → html description
+LESSON_DESCRIPTIONS = {
+    ('FASE 1 Crea tu Marca Personal', '3.1 Conócete a ti mismo, define tu identidad.'): """<p>Los fundamentos para crear una Marca Personal se basan en:</p>
 <ul>
   <li><strong>La identidad:</strong> Todo aquello que te define, desde tu manera de hablar, tu vestimenta, el color que utilizas para tus videos, tu peinado... También todo lo que está dentro de ti, como tu seguridad, la dureza del mensaje, la dulzura... Todo esto se puede entrenar y moldear para ir definiendo nuestra identidad.</li>
   <li><strong>Valor:</strong> El valor es lo que ayudas a los demás con tu mensaje, la identidad es lo que más le ayuda al otro y lo que más transmite, pero luego esta el mensaje. La información es la vía por la cual nosotros vamos a llegar al otro, un mensaje autentico, nuevo, fresco, creativo... va a atraer a nuestra audiencia.</li>
@@ -1581,58 +1609,60 @@ def seed_descriptions():
 
 <p><strong>Visualiza</strong></p>
 <p>Este ejercicio es fundamental, visualiza dónde quieres estar, cuáles son tus objetivos, y siéntete como si ya los hubieras conseguido.</p>
-<p>Puedes hacerte una visual board o visualizarte cuando no estés haciendo ninguna tarea intelectual. Da igual como lo hagas, pero define con todo lujo de detalles dónde quieres llegar y qué quieres hacer.</p>"""
-        ),
-    ]
-
-    updated = 0
-    for course_title, lesson_title, html in _updates:
-        lesson = (Lesson.query
-                  .join(Section).join(Course)
-                  .filter(Course.title == course_title,
-                          Lesson.title == lesson_title)
-                  .first())
-        if lesson and 'assets.skool.com' not in (lesson.description or ''):
-            lesson.description = html
-            updated += 1
-            print(f'[seed_desc] Updating: {lesson_title}')
-        elif not lesson:
-            print(f'[seed_desc] WARNING - lesson not found: {lesson_title!r} in {course_title!r}')
-
-    if updated:
-        db.session.commit()
-        print(f'[seed_desc] Done — updated {updated} lesson description(s).')
-    else:
-        print('[seed_desc] All descriptions already up to date.')
+<p>Puedes hacerte una visual board o visualizarte cuando no estés haciendo ninguna tarea intelectual. Da igual como lo hagas, pero define con todo lujo de detalles dónde quieres llegar y qué quieres hacer.</p>""",
+}
 
 
-# ── Forzar actualización de descripciones (solo admin) ───────────────────────
-@app.route('/admin/update-descriptions')
+@app.route('/admin/update-descriptions', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def admin_force_descriptions():
-    """Force-run seed_descriptions() and show what was updated."""
-    results = []
-    _updates = [
-        (
-            'FASE 1 Crea tu Marca Personal',
-            '3.1 Conócete a ti mismo, define tu identidad.',
-        ),
-    ]
-    for course_title, lesson_title in _updates:
-        lesson = (Lesson.query
-                  .join(Section).join(Course)
-                  .filter(Course.title == course_title,
-                          Lesson.title == lesson_title)
-                  .first())
-        if lesson:
-            has_content = 'assets.skool.com' in (lesson.description or '')
-            results.append(f'✅ Encontrada: "{lesson_title}" — desc len={len(lesson.description or "")} — ya actualizada={has_content}')
-        else:
-            results.append(f'❌ NO encontrada: "{lesson_title}" en curso "{course_title}"')
-    seed_descriptions()
-    output = '<br>'.join(results)
-    return f'<pre style="padding:20px;font-family:monospace">{output}\n\n✔ seed_descriptions() ejecutado</pre><a href="{url_for("admin_dashboard")}">← Volver</a>'
+    """Force-update lesson descriptions via direct SQL. GET shows status, POST applies updates."""
+    lines = []
+    try:
+        with db.engine.connect() as conn:
+            for (course_title, lesson_title), html in LESSON_DESCRIPTIONS.items():
+                # Find lesson id via raw SQL join
+                row = conn.execute(text(
+                    """SELECT l.id, l.description FROM lesson l
+                       JOIN section s ON s.id = l.section_id
+                       JOIN course c ON c.id = s.course_id
+                       WHERE c.title = :ct AND l.title = :lt
+                       LIMIT 1"""
+                ), {'ct': course_title, 'lt': lesson_title}).fetchone()
+
+                if row is None:
+                    lines.append(f'❌ NO encontrada: "{lesson_title}" en "{course_title}"')
+                    continue
+
+                lesson_id = row[0]
+                current_desc = row[1] or ''
+                already_rich = len(current_desc) > 500
+                lines.append(f'✅ id={lesson_id} — "{lesson_title[:50]}" — desc_len={len(current_desc)} — rica={already_rich}')
+
+                if request.method == 'POST':
+                    conn.execute(text(
+                        'UPDATE lesson SET description = :html WHERE id = :lid'
+                    ), {'html': html, 'lid': lesson_id})
+                    lines.append(f'   → 💾 Descripción actualizada ({len(html)} chars)')
+
+            if request.method == 'POST':
+                conn.commit()
+                lines.append('\n✔ COMMIT realizado correctamente.')
+    except Exception as e:
+        lines.append(f'\n💥 ERROR: {e}')
+
+    output = '\n'.join(lines)
+    action_btn = ''
+    if request.method == 'GET':
+        action_btn = f'<form method="POST"><button type="submit" style="margin-top:16px;padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px">🚀 Aplicar actualización ahora</button></form>'
+
+    return f'''<!DOCTYPE html><html><body style="font-family:monospace;padding:30px;background:#0f0f0f;color:#d4d4d4">
+<h2 style="color:#a78bfa">🔧 Admin — Actualizar descripciones</h2>
+<pre style="background:#1a1a1a;padding:20px;border-radius:8px;white-space:pre-wrap">{output}</pre>
+{action_btn}
+<br><a href="{url_for('admin_dashboard')}" style="color:#7c3aed">← Volver al admin</a>
+</body></html>'''
 
 
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
