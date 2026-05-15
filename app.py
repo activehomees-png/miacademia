@@ -1324,6 +1324,81 @@ def seed_db():
         db.session.commit()
         print('[seed] FASE 3 course created with all sections and lessons.')
 
+    # ── FASE 4 course import ──────────────────────────────────────────────────
+    if not Course.query.filter_by(title='FASE 4. Ventas de 10k/mes').first():
+        fase4 = Course(
+            title='FASE 4. Ventas de 10k/mes',
+            subtitle='Producto, VSL, cierre de ventas, setters y copywriting',
+            description='Todo lo que debes saber para vender por internet.',
+            is_published=True, price=0.0,
+        )
+        db.session.add(fase4)
+        db.session.flush()
+
+        _sections4 = [
+            ('1. Como crear tu producto o servicio.', [
+                ('2.1 Utilizando Chat GPT para tu cliente ideal.',      'https://vimeo.com/1013973439',  13, ''),
+                ('2.1 Definiendo tu producto para le venta masiva.',    'https://vimeo.com/1133845788',  30, ''),
+                ('2.3 Precio y entrega del producto.',                  'https://vimeo.com/880312444',   86, ''),
+                ('2.4 Recupera la inversión del Master de MP.',         'https://vimeo.com/882643397',   67, ''),
+                ('2.5 Estrategia webinar.',                             'https://vimeo.com/885310951',   70, ''),
+                ('2.6 Llamada a venta.',                                'https://vimeo.com/887431717',   63, ''),
+            ]),
+            ('2. Método VSL.', [
+                ('1.1 Estrategia.',                                     'https://vimeo.com/920521443',   22, ''),
+                ('1.2 Creando el VSL',                                  'https://vimeo.com/923461657',   23, ''),
+                ('1.3 Estructura inicio VSL',                           'https://vimeo.com/1077030592',  25, ''),
+                ('1.4 Parte media VSL',                                 'https://vimeo.com/1084013382',  17, ''),
+                ('1.5 Parte final VSL',                                 'https://vimeo.com/1089509756',   8, ''),
+                ('1.6 Como grabarse el VSL',                            'https://vimeo.com/1111930051',   7, ''),
+                ('1.7 Optimización y ejemplos de VSL.',                 'https://vimeo.com/926614704',   17, ''),
+                ('1.8 Como abrir y configurar Calendly',                'https://vimeo.com/1152825477',  13, ''),
+            ]),
+            ('3. Cierre de ventas.', [
+                ('3.1 Creencias sobre la venta.',                       'https://vimeo.com/1133793652',  17, ''),
+                ('3.2 Gana mucho dinero cerrando ventas.',              'https://vimeo.com/1111879667',  30, ''),
+            ]),
+            ('4. Escalar con setters', [
+                ('3.1 ¿Qué es un setter?',                              'https://vimeo.com/1015648578',  16, ''),
+                ('3.2 Funciones de un setter.',                         'https://vimeo.com/1019435606',  15, ''),
+                ('3.3 Procedimiento para tus setters.',                 'https://vimeo.com/1020480794',  12, ''),
+                ('3.4 Role Play conversaciones de setters.',            'https://vimeo.com/1025041421',  15, ''),
+                ('3.5 ¿Qué requerimos de un setter?',                   'https://vimeo.com/1031864419',  12, ''),
+            ]),
+            ('5. Copywriter persuasivo', [
+                ('4.0 Proposito de tu Marca.',                          'https://vimeo.com/1051602353',  15, ''),
+                ('4.1 ¿Que és el copywriting?',                         'https://vimeo.com/1033089083',  17, ''),
+                ('4.2 Como usar el copy en tu negocio.',                'https://vimeo.com/1036130237',  16, ''),
+                ('4.3 Copy writing aplicado a la pagina web',           '',                               0, ''),
+                ('4.4 Haciendo de tu web una maquina de ventas.',       'https://vimeo.com/1039186835',  15, ''),
+                ('4.5 Copywriting para email marketing',                'https://vimeo.com/1042754681',  18, ''),
+                ('4.6 Gestor de mailing',                               'https://vimeo.com/1042755748',   5, ''),
+                ('4.7 Redactar con IA y automatizaciones de email.',    'https://vimeo.com/1056078465',  14, ''),
+                ('4.8 Estrategia de Marca para comunicar.',             'https://vimeo.com/1046164226',  20, ''),
+            ]),
+            ('6. Facebook ADS.', [
+                ('3.1 MasterClass conceptos Facebook e Instagram ADS',  'https://vimeo.com/962585274',   87, ''),
+                ('3.2 Masterclass FACEBOOK ADS 2 28-ago-2024',          'https://vimeo.com/1005964444',  57, ''),
+            ]),
+            ('7. Afiliación.', [
+                ('Amazon afiliados + audible',                          'https://vimeo.com/1028207666',   4, ''),
+            ]),
+            ('PREGUNTAS FRECUENTES', [
+                ('¿En que plataforma subimos nuestros cursos?',         'https://vimeo.com/932500762',    2, ''),
+                ('¿tengo 2 buyerpersona creo dos productos?',           'https://vimeo.com/951268043',    8, ''),
+            ]),
+        ]
+
+        for s_order, (sec_title, lessons) in enumerate(_sections4, 1):
+            sec = Section(course_id=fase4.id, title=sec_title, order=s_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url, l_dur, l_desc) in enumerate(lessons, 1):
+                db.session.add(Lesson(section_id=sec.id, title=l_title,
+                    video_url=l_url, duration_min=l_dur, description=l_desc, order=l_order))
+        db.session.commit()
+        print('[seed] FASE 4 course created with all sections and lessons.')
+
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
 @app.route('/admin/db-status')
 @login_required
