@@ -370,7 +370,9 @@ def add_comment_ajax(post_id):
         db.session.commit()
     return jsonify({'ok': True, 'username': current_user.username,
                     'initials': current_user.initials, 'content': content,
-                    'timeago': 'ahora mismo'})
+                    'timeago': 'ahora mismo',
+                    'has_avatar': bool(current_user.avatar_data),
+                    'user_id': current_user.id})
 
 @app.route('/comunidad/post/<int:post_id>/like', methods=['POST'])
 @login_required
