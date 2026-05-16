@@ -12,9 +12,10 @@
 <div class="space-y-3">
   {% for lc in classes %}
   <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 flex items-center gap-4 shadow-sm">
-    <div class="flex-shrink-0 text-center bg-violet-50 border border-violet-100 rounded-xl px-3 py-2 min-w-[56px]">
-      <p class="text-xs text-violet-500 font-bold">{{ lc.scheduled_at.strftime('%b').upper() }}</p>
-      <p class="text-xl font-bold text-[#18181b]">{{ lc.scheduled_at.strftime('%d') }}</p>
+    <div class="flex-shrink-0 text-center rounded-xl px-3 py-2 min-w-[56px]"
+         style="background:#ede9fe;border:1px solid #c4b5fd">
+      <p class="text-xs font-bold" style="color:#7c3aed">{{ lc.scheduled_at.strftime('%b').upper() }}</p>
+      <p class="text-xl font-bold" style="color:#18181b">{{ lc.scheduled_at.strftime('%d') }}</p>
     </div>
     <div class="flex-1 min-w-0">
       <p class="font-semibold text-[#18181b] text-sm">{{ lc.title }}</p>
