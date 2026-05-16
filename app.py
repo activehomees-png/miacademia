@@ -1136,6 +1136,76 @@ def members_suspend(user_id):
         flash(f'Usuario {user.username} {action}.', 'success')
     return redirect(url_for('members'))
 
+@app.route('/miembros/<int:user_id>/actividad')
+@login_required
+def member_activity(user_id):
+    member = User.query.get_or_404(user_id)
+    # Solo el propio usuario o un admin puede ver la actividad
+    if not current_user.is_admin and current_user.id != user_id:
+        abort(403)
+
+    # Lecciones completadas
+    completed = (db.session.query(LessonProgress, Lesson, Course)
+                 .join(Lesson, LessonProgress.lesson_id == Lesson.id)
+                 .join(Section, Lesson.section_id == Section.id)
+                 .join(Course, Section.course_id == Course.id)
+                 .filter(LessonProgress.user_id == user_id)
+                 .order_by(LessonProgress.completed_at.desc())
+                 .all())
+
+    # Posts creados
+    posts = Post.query.filter_by(user_id=user_id).order_by(Post.created_at.desc()).all()
+
+    # Comentarios
+    comments = (Comment.query.filter_by(user_id=user_id)
+                .order_by(Comment.created_at.desc()).all())
+
+    # Total de puntos
+    total_pts = db.session.query(db.func.sum(PointEvent.points))\
+                          .filter_by(user_id=user_id).scalar() or 0
+
+    # Construir timeline unificado
+    timeline = []
+    for lp, lesson, course in completed:
+        timeline.append({
+            'date': lp.completed_at,
+            'type': 'lesson',
+            'icon': '📚',
+            'text': f'Completó <strong>{lesson.title}</strong>',
+            'sub':  course.title,
+            'pts':  3,
+        })
+    for p in posts:
+        timeline.append({
+            'date': p.created_at,
+            'type': 'post',
+            'icon': '📝',
+            'text': f'Publicó <strong>{p.title}</strong>',
+            'sub':  None,
+            'pts':  4,
+        })
+    for c in comments:
+        timeline.append({
+            'date': c.created_at,
+            'type': 'comment',
+            'icon': '💬',
+            'text': 'Comentó en un post',
+            'sub':  (c.content[:60] + '…') if len(c.content) > 60 else c.content,
+            'pts':  2,
+        })
+    timeline.sort(key=lambda x: x['date'], reverse=True)
+
+    # Estadísticas rápidas
+    stats = {
+        'lessons':  len(completed),
+        'posts':    len(posts),
+        'comments': len(comments),
+        'points':   total_pts,
+    }
+
+    return render_template('member_activity.html',
+                           member=member, timeline=timeline, stats=stats)
+
 # ── ERROR PAGES ───────────────────────────────────────────────────────────────
 
 @app.errorhandler(403)

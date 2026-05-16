@@ -63,6 +63,12 @@
       Desde {{ member.created_at.strftime('%d/%m/%Y') }}
     </p>
 
+    <!-- Botón actividad (visible para todos) -->
+    <a href="{{ url_for('member_activity', user_id=member.id) }}"
+       class="w-full btn btn-secondary btn-sm justify-center mb-2" style="font-size:11px;">
+      ⚡ Actividad
+    </a>
+
     <!-- Acciones admin (solo visibles para admins, no sobre sí mismo) -->
     {% if current_user.is_admin and member.id != current_user.id %}
     <div class="w-full space-y-1.5 border-t pt-3 mt-auto" style="border-color:var(--border)">
