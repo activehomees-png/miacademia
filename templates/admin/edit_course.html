@@ -11,7 +11,7 @@
   <!-- Info del curso -->
   <div class="bg-white border border-[#e4e4e7] rounded-xl p-5 shadow-sm">
     <h2 class="text-sm font-bold text-[#18181b] mb-4">Información del curso</h2>
-    <form method="POST" class="space-y-4">
+    <form method="POST" enctype="multipart/form-data" class="space-y-4">
       <input type="hidden" name="action" value="update"/>
       <div>
         <label class="block text-xs font-medium text-[#71717a] mb-1">Título</label>
@@ -26,8 +26,21 @@
         <textarea name="description" class="input" rows="4">{{ course.description }}</textarea>
       </div>
       <div>
-        <label class="block text-xs font-medium text-[#71717a] mb-1">URL imagen portada</label>
-        <input type="url" name="image_url" class="input" value="{{ course.image }}"/>
+        <label class="block text-xs font-medium text-[#71717a] mb-1">Foto de portada</label>
+        {% if course.cover_data %}
+        <div class="mb-2 rounded-lg overflow-hidden border border-[#e4e4e7]" style="max-height:140px">
+          <img src="{{ url_for('serve_course_cover', course_id=course.id) }}"
+               class="w-full h-full object-cover" alt="Portada actual"/>
+        </div>
+        <p class="text-[10px] text-[#a1a1aa] mb-1">Portada actual. Sube una nueva para reemplazarla.</p>
+        {% elif course.image %}
+        <div class="mb-2 rounded-lg overflow-hidden border border-[#e4e4e7]" style="max-height:140px">
+          <img src="{{ course.image }}" class="w-full h-full object-cover" alt="Portada actual"/>
+        </div>
+        <p class="text-[10px] text-[#a1a1aa] mb-1">Portada por URL. Sube un archivo para reemplazarla.</p>
+        {% endif %}
+        <input type="file" name="cover_image" accept="image/*" class="input text-sm py-1.5"/>
+        <p class="text-[10px] text-[#a1a1aa] mt-1">JPG, PNG o WebP. Recomendado 800×600 px.</p>
       </div>
       <div>
         <label class="block text-xs font-medium text-[#71717a] mb-1">Precio (€)</label>

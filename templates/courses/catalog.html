@@ -30,7 +30,10 @@
     <a href="{{ url_for('learn', course_id=course.id) if (course.is_free or course.id in enrolled_ids or current_user.is_admin) else url_for('course_detail', course_id=course.id) }}" class="block">
       <!-- Imagen cuadrada con fondo oscuro -->
       <div class="w-full aspect-[4/3] bg-[#1a1a1a] overflow-hidden flex items-center justify-center relative">
-        {% if course.image %}
+        {% if course.cover_data %}
+        <img src="{{ url_for('serve_course_cover', course_id=course.id) }}" alt="{{ course.title }}"
+             class="w-full h-full object-cover"/>
+        {% elif course.image %}
         <img src="{{ course.image }}" alt="{{ course.title }}"
              class="w-full h-full object-cover"/>
         {% else %}

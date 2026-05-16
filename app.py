@@ -586,6 +586,13 @@ def serve_avatar(user_id):
         return send_file(io.BytesIO(user.avatar_data), mimetype=user.avatar_mime)
     abort(404)
 
+@app.route('/curso/<int:course_id>/portada')
+def serve_course_cover(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.cover_data:
+        return send_file(io.BytesIO(course.cover_data), mimetype=course.cover_mime)
+    abort(404)
+
 @app.route('/comunidad/banner')
 def serve_banner():
     s = get_settings()
@@ -677,6 +684,10 @@ def admin_edit_course(course_id):
             course.price        = float(request.form.get('price', course.price) or 0)
             course.is_published = 'published' in request.form
             course.image        = request.form.get('image_url', course.image).strip()
+            cover_file = request.files.get('cover_image')
+            if cover_file and cover_file.filename:
+                course.cover_data = cover_file.read()
+                course.cover_mime = cover_file.mimetype or 'image/jpeg'
             db.session.commit()
             flash('Curso actualizado.', 'success')
         elif action == 'add_section':
@@ -1737,6 +1748,9 @@ with app.app_context():
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_point_event_date ON point_event(created_at)"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS recurrence VARCHAR(10) DEFAULT 'none'"))
             conn.execute(text("ALTER TABLE live_class ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES live_class(id)"))
+            # course cover image (binary)
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS cover_data BYTEA"))
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS cover_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
             # lesson inline images for rich-text descriptions
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS lesson_image (
