@@ -127,6 +127,7 @@ class Lesson(db.Model):
     description  = db.Column(db.Text, default='')
     order        = db.Column(db.Integer, default=0)
     duration_min = db.Column(db.Integer, default=0)
+    group_label  = db.Column(db.String(200), nullable=True)
     files        = db.relationship('LessonFile', backref='lesson', lazy=True,
                                    cascade='all, delete-orphan')
 

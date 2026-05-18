@@ -48,36 +48,55 @@
         </summary>
 
         <div class="pb-1">
+          {% set ns2 = namespace(cur_group='__none__', group_open=false, l_idx=0) %}
           {% for lesson in section.lessons %}
-          {% set l_idx = loop.index %}
+          {% set ns2.l_idx = ns2.l_idx + 1 %}
           {% set is_active = current_lesson and current_lesson.id == lesson.id %}
           {% set is_done   = lesson.id in completed_ids %}
+          {% set grp = lesson.group_label or '' %}
+
+          {# — open / close sub-group headers — #}
+          {% if grp != ns2.cur_group %}
+            {% if ns2.group_open %}</div></details>{% set ns2.group_open = false %}{% endif %}
+            {% set ns2.cur_group = grp %}
+            {% if grp %}
+            {# check if any lesson in this group is active #}
+            {% set grp_has_active = namespace(v=false) %}
+            {% for ll in section.lessons %}{% if ll.group_label == grp and current_lesson and current_lesson.id == ll.id %}{% set grp_has_active.v = true %}{% endif %}{% endfor %}
+            <details {% if grp_has_active.v %}open{% endif %} class="group/sub border-b border-[#f0f0f0] last:border-0">
+              <summary class="flex items-center gap-2 px-4 py-2 cursor-pointer select-none
+                              hover:bg-[#f4f4f5] transition list-none">
+                <span class="text-[#a1a1aa] group-open/sub:rotate-90 transition-transform duration-150 text-[9px]">▶</span>
+                <span class="flex-1 text-[11px] font-semibold truncate" style="color:var(--text2)">📂 {{ grp }}</span>
+              </summary>
+              <div class="pl-3">
+            {% set ns2.group_open = true %}
+            {% endif %}
+          {% endif %}
+
+          {# — lesson row — #}
           <a href="{{ url_for('learn', course_id=course.id, leccion=lesson.id) }}"
              class="flex items-center gap-3 px-4 py-2.5 transition
              {% if is_active %}bg-amber-50 border-r-2 border-amber-400
              {% else %}hover:bg-[#fafafa]{% endif %}">
-
-            <!-- Status icon -->
             <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px]
               {% if is_done %}bg-green-100 text-green-600
               {% elif is_active %}bg-amber-100 text-amber-600
               {% else %}bg-[#f4f4f5] text-[#a1a1aa]{% endif %}">
-              {% if is_done %}✓{% elif is_active %}▶{% else %}{{ l_idx }}{% endif %}
+              {% if is_done %}✓{% elif is_active %}▶{% else %}{{ ns2.l_idx }}{% endif %}
             </span>
-
             <div class="flex-1 min-w-0">
               <p class="text-xs truncate
                 {% if is_active %}font-semibold text-[#18181b]
                 {% elif is_done %}text-[#52525b]
-                {% else %}text-[#71717a]{% endif %}">
-                {{ lesson.title }}
-              </p>
+                {% else %}text-[#71717a]{% endif %}">{{ lesson.title }}</p>
               {% if lesson.duration_min %}
               <p class="text-[10px] text-[#a1a1aa]">{{ lesson.duration_min }} min</p>
               {% endif %}
             </div>
           </a>
           {% endfor %}
+          {% if ns2.group_open %}</div></details>{% endif %}
         </div>
       </details>
       {% endfor %}

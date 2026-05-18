@@ -767,6 +767,7 @@ def admin_add_lesson(section_id):
             description  = request.form.get('description', '').strip(),
             duration_min = int(request.form.get('duration', 0) or 0),
             order        = len(section.lessons),
+            group_label  = request.form.get('group_label', '').strip() or None,
         ))
         db.session.commit()
         flash('Lección añadida.', 'success')
@@ -860,6 +861,15 @@ def admin_save_lesson_video(lesson_id):
     db.session.commit()
     return ('', 204)   # AJAX — no redirect needed
 
+
+@app.route('/admin/leccion/<int:lesson_id>/grupo', methods=['POST'])
+@login_required
+@admin_required
+def admin_save_lesson_group(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+    lesson.group_label = request.form.get('group_label', '').strip() or None
+    db.session.commit()
+    return ('', 204)
 
 @app.route('/admin/leccion/<int:lesson_id>/imagen', methods=['POST'])
 @login_required
@@ -2371,6 +2381,16 @@ with app.app_context():
     except Exception as e:
         print(f'[seed_desc] ERROR en seed_descriptions: {e}')
         db.session.rollback()
+
+    # DB column migration: add group_label to lesson if missing
+    try:
+        with db.engine.connect() as _conn:
+            _conn.execute(text(
+                "ALTER TABLE lesson ADD COLUMN IF NOT EXISTS group_label VARCHAR(200)"
+            ))
+            _conn.commit()
+    except Exception as _e:
+        print(f'[migration] group_label: {_e}')
 
     seed_fase5()
     seed_bono_habitos()
