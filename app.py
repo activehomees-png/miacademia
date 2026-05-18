@@ -1669,32 +1669,50 @@ def seed_db():
 
 
 def fix_fase5_carpeta6():
-    """Add the 4 Finanzas Personales lessons to carpeta 6 of FASE 5 if missing."""
+    """Ensure '6 PROGRAMA TU MENTE PARA LA ABUNDANCIA' exists in FASE 5
+    with all 7 lessons (3 originals + 4 finanzas). Creates the section if missing."""
     try:
         course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
         if not course:
             return
-        sec = Section.query.filter_by(course_id=course.id, title='6 PROGRAMA TU MENTE PARA LA ABUNDANCIA').first()
-        if not sec:
-            return
-        existing_titles = {l.title for l in sec.lessons}
-        new_lessons = [
-            ('¿Qué es el dinero?',                'https://youtu.be/jBd3M20EQic', 11),
-            ('¿Cómo ahorrar?',                    'https://youtu.be/gN2Z6gVwsYA', 13),
-            ('Gestiona tus finanzas personales.', 'https://youtu.be/BbSj95aKAW4', 11),
-            ('¿En que invertir?',                 'https://youtu.be/L-yGqUTphN0', 16),
+
+        all_lessons = [
+            ('6.1 Atraer Abundancia y Dinero Cambiando tu Mente', 'https://youtu.be/l27PoZo_rpQ', 54),
+            ('6.2 Tu vieja identidad sobre el dinero.',           'https://youtu.be/nG9F_gKpTTM', 31),
+            ('6.3 El Dinero Está En La Relación Con Tu Padre',    'https://youtu.be/7samMzQPuzo', 18),
+            ('¿Qué es el dinero?',                                'https://youtu.be/jBd3M20EQic', 11),
+            ('¿Cómo ahorrar?',                                    'https://youtu.be/gN2Z6gVwsYA', 13),
+            ('Gestiona tus finanzas personales.',                 'https://youtu.be/BbSj95aKAW4', 11),
+            ('¿En que invertir?',                                 'https://youtu.be/L-yGqUTphN0', 16),
         ]
-        max_order = max((l.order for l in sec.lessons), default=0)
+
+        sec = Section.query.filter_by(course_id=course.id,
+                                      title='6 PROGRAMA TU MENTE PARA LA ABUNDANCIA').first()
+        if not sec:
+            # Section was deleted by an earlier seed — recreate it at a high order
+            max_order = db.session.query(db.func.max(Section.order)).filter_by(
+                course_id=course.id).scalar() or 0
+            sec = Section(course_id=course.id,
+                          title='6 PROGRAMA TU MENTE PARA LA ABUNDANCIA',
+                          order=max_order + 1)
+            db.session.add(sec)
+            db.session.flush()
+            print('[fix_fase5_carpeta6] Sección recreada.')
+
+        existing_titles = {l.title for l in sec.lessons}
+        max_l_order = max((l.order for l in sec.lessons), default=0)
         added = 0
-        for title, url, dur in new_lessons:
+        for title, url, dur in all_lessons:
             if title not in existing_titles:
-                max_order += 1
+                max_l_order += 1
                 db.session.add(Lesson(section_id=sec.id, title=title,
-                                      video_url=url, duration_min=dur, order=max_order))
+                                      video_url=url, duration_min=dur, order=max_l_order))
                 added += 1
         if added:
             db.session.commit()
-            print(f'[fix_fase5_carpeta6] Añadidas {added} lecciones de finanzas a carpeta 6.')
+            print(f'[fix_fase5_carpeta6] Añadidas {added} lecciones a carpeta 6.')
+        else:
+            print('[fix_fase5_carpeta6] Carpeta 6 ya estaba completa.')
     except Exception as e:
         print(f'[fix_fase5_carpeta6] ERROR: {e}')
         db.session.rollback()
