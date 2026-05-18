@@ -2073,6 +2073,76 @@ def seed_liberacion_emocional():
         db.session.rollback()
 
 
+def seed_clases_2026():
+    try:
+        if Course.query.filter_by(title='Clases pasadas grabadas 2026').first():
+            return
+        course = Course(
+            title='Clases pasadas grabadas 2026',
+            subtitle='Todas las clases en directo de 2026',
+            description='Accede a todas las grabaciones de las clases en directo realizadas durante 2026.',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(course)
+        db.session.flush()
+
+        sections_data = [
+            ('Mayo 2026', 0, [
+                ('6-5-2026 Constancia',  'https://vimeo.com/1189876173'),
+                ('6-5-2026 Ventas',      'https://vimeo.com/1189510087'),
+                ('3-5-2026',             'https://vimeo.com/1188857174'),
+            ]),
+            ('Abril 2026', 1, [
+                ('29-4-2026 Creatividad',                          ''),
+                ('28-4-2026 Mentalidad',                           'https://vimeo.com/1187597054'),
+                ('26-4-2026 Retencion de Atencion por psicologia', 'https://vimeo.com/1186745469'),
+                ('20-4-2026 Youtube y herramientas IA',            'https://vimeo.com/1184715176'),
+                ('19-4-2026 - Juego de paja o mina de oro',        'https://vimeo.com/1184537495'),
+                ('4-4-2026 - Meta Ads - Mentalidad - Coherencia',  'https://vimeo.com/1180151061'),
+                ('2-4-2026 Dejar ir',                              'https://vimeo.com/1179488825'),
+            ]),
+            ('Marzo 2026', 2, [
+                ('26-3-2026 Cuenta tu historia',          'https://vimeo.com/1177467500'),
+                ('24-3-2026 Autoridad',                   'https://vimeo.com/1176131131'),
+                ('18-3-2026',                             'https://vimeo.com/1174683508'),
+                ('15-3-2026',                             'https://vimeo.com/1173810561'),
+                ('14-03-2026 El poder de la comunicacion','https://vimeo.com/1173634843'),
+                ('11-03-2026',                            'https://vimeo.com/1172320523'),
+                ('4-3-2026 Mentalidad y habitos',         'https://vimeo.com/1170587953'),
+                ('1-3-2026 Como atraer a tu publico objetivo', 'https://vimeo.com/1169364567'),
+            ]),
+            ('Febrero 2026', 3, [
+                ('25-2-2026 Mentalidad y dinero',              'https://vimeo.com/1168247763'),
+                ('25-2-2026 Analisis de Marcas Personales',    'https://vimeo.com/1168019884'),
+                ('22-02-2026',                                 'https://vimeo.com/1167179538'),
+                ('19-2-2026 Mentalidad',                       'https://vimeo.com/1166276374'),
+                ('4-2-2026 Romper creencias Marca Personal',   'https://vimeo.com/1161575886'),
+            ]),
+            ('Enero 2026', 4, [
+                ('28-1-2026', 'https://vimeo.com/1159154315'),
+            ]),
+        ]
+
+        for sec_title, sec_order, lessons in sections_data:
+            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url) in enumerate(lessons):
+                db.session.add(Lesson(
+                    section_id=sec.id,
+                    title=l_title,
+                    video_url=l_url,
+                    order=l_order,
+                ))
+
+        db.session.commit()
+        print('[seed_clases_2026] Curso "Clases pasadas grabadas 2026" creado con 5 secciones.')
+    except Exception as e:
+        print(f'[seed_clases_2026] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/fix-liberacion-emocional')
 @login_required
 @admin_required
@@ -2396,6 +2466,7 @@ with app.app_context():
     seed_bono_habitos()
     seed_bono_organizacion()
     seed_liberacion_emocional()
+    seed_clases_2026()
 
     # Backfill points for existing lesson completions and comments
     try:
