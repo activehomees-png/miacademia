@@ -1836,6 +1836,98 @@ def seed_fase5():
         db.session.rollback()
 
 
+def seed_bono_habitos():
+    """Replace the flat 'Hábitos para la paz mental' section in FASE 5 with
+    the 10 proper sub-sections from the [BONO] course, each with their lessons."""
+    try:
+        course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
+        if not course:
+            return  # seed_fase5 hasn't run yet
+
+        # Guard: if "1. Introducción" section already exists we already ran this
+        if Section.query.filter_by(course_id=course.id, title='1. Introducción').first():
+            return
+
+        # Delete the old flat section (cascade removes its lessons)
+        old_sec = Section.query.filter_by(course_id=course.id, title='1 Hábitos para la paz mental').first()
+        if old_sec:
+            db.session.delete(old_sec)
+            db.session.flush()
+
+        # Push existing sections (Encuentra tu proposito etc.) to orders 10/11/12
+        for sec in Section.query.filter_by(course_id=course.id).all():
+            sec.order += 10
+        db.session.flush()
+
+        # 10 sub-sections from [BONO] Hábitos para la paz mental
+        _bono_sections = [
+            ('1. Introducción', 0, [
+                ('1.1 Introduccion',                   'https://vimeo.com/749878520'),
+                ('1.2 Como realizar este curso',        'https://vimeo.com/749881629/e2cbd4caf7'),
+                ('1.3 ¿Porque cuesta tanto cambiar?',  'https://vimeo.com/749884233/1e320d927f'),
+            ]),
+            ('2. Aquí y ahora.', 1, [
+                ('2.1 El presente',                        'https://vimeo.com/749887187/ffba41cccb'),
+                ('2.1.1 Profundizando en la meditacion',   'https://vimeo.com/749890461/a00d1504e0'),
+                ('2.2 Pensar menos, sentir mas',           'https://vimeo.com/749888068/213b9224b8'),
+                ('2.3 Decido vivir este momento.',         'https://vimeo.com/749888144/f7e415bb2e'),
+                ('2.3.1 Sanar el pasado',                  'https://vimeo.com/749892494/b00e80badc'),
+            ]),
+            ('3. Aceptación.', 2, [
+                ('3.1 La Aceptacion',  'https://vimeo.com/749893948/5b13abd2ba'),
+            ]),
+            ('4. La Mascara.', 3, [
+                ('4.1 Como se forma el ego',  'https://vimeo.com/749894742/1fdf42c662'),
+                ('4.1.2 ¿Para que?',          'https://vimeo.com/749894828/5cdc074054'),
+                ('4.1.1 Creencias',           'https://vimeo.com/749894807/57e7fcf8e1'),
+                ('4.2 Niño Interior',         'https://vimeo.com/749897628/38e3e3a08d'),
+            ]),
+            ('5. La imagen de uno mismo.', 4, [
+                ('5.1 La ilusion de uno mismo',   'https://vimeo.com/749899407/9cef2eec80'),
+                ('5.2 Recogida de proyecciones',  'https://vimeo.com/749901468/84733c5bfc'),
+                ('5.1.1 Reprogramar la mente',    'https://vimeo.com/749899500/3357242a3d'),
+            ]),
+            ('6. Hábitos.', 5, [
+                ('6.1 Reprogramar la mente',  'https://vimeo.com/749899500/3357242a3d'),
+            ]),
+            ('7. Alimentación.', 6, [
+                ('7.1 Mindfull eating.',          'https://vimeo.com/749904175/162461a778'),
+                ('7.2.1 Alimentacion consciente', 'https://vimeo.com/749906274/43a19e519b'),
+                ('7.2.2 Alimentación consciente', 'https://vimeo.com/749906363/e00d5f300d'),
+            ]),
+            ('8. Respiración.', 7, [
+                ('8.1 Iniciacion a la respiracion', 'https://vimeo.com/749908687/b0c7e3572b'),
+                ('8.2 Respiracion consciente',      'https://vimeo.com/749909287/19c2af632c'),
+            ]),
+            ('9. Energia sexual.', 8, [
+                ('9.1 Energia sexual',      'https://vimeo.com/749910594/f5716a6412'),
+                ('9.2 Sexualidad consciente', 'https://vimeo.com/749910707/f8b9f064cf'),
+            ]),
+            ('10. Super hábitos y cierre.', 9, [
+                ('10. Super habitos',            'https://vimeo.com/749912323/da572845b1'),
+                ('11. Cierre de curso + regalo', 'https://vimeo.com/749914145/8f0ad0592b'),
+            ]),
+        ]
+
+        for sec_title, sec_order, lessons in _bono_sections:
+            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url) in enumerate(lessons):
+                db.session.add(Lesson(
+                    section_id=sec.id,
+                    title=l_title,
+                    video_url=l_url,
+                    order=l_order,
+                ))
+
+        db.session.commit()
+        print('[seed_bono_habitos] Reemplazada sección 1 con 10 sub-secciones del BONO.')
+    except Exception as e:
+        print(f'[seed_bono_habitos] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/update-descriptions', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -1995,6 +2087,7 @@ with app.app_context():
         db.session.rollback()
 
     seed_fase5()
+    seed_bono_habitos()
 
     # Backfill points for existing lesson completions and comments
     try:
