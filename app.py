@@ -2078,6 +2078,33 @@ def seed_liberacion_emocional():
         db.session.rollback()
 
 
+_PREMIERE_LESSONS = [
+    ('Introduccion',  'https://vimeo.com/828873589/ae73df2542'),
+    ('Capitulo 1',    'https://vimeo.com/828874651/6bd0a0d35d'),
+    ('Capitulo 2',    'https://vimeo.com/828874928/5bdc98bce0'),
+    ('Capitulo 3',    'https://vimeo.com/828875116/62f0232ea8'),
+    ('Capitulo 4',    'https://vimeo.com/828876182/ab62fe56c0'),
+    ('Capitulo 5',    'https://vimeo.com/828877925/aa07c9debb'),
+    ('Capitulo 6',    'https://vimeo.com/828879749/b7372fbba9'),
+    ('Capitulo 7',    'https://vimeo.com/828881488/3a76019d7e'),
+    ('Capitulo 8',    'https://vimeo.com/828883812/0b8033b8e7'),
+    ('Capitulo 9',    'https://vimeo.com/828885212/75625f9a8d'),
+    ('Capitulo 10',   'https://vimeo.com/828886466/7a65b850c5'),
+    ('Capitulo 11',   'https://vimeo.com/828887594/775adbf33d'),
+    ('Capitulo 12',   'https://vimeo.com/828888224/ecb31a3af2'),
+    ('Capitulo 13',   'https://vimeo.com/828889019/a66ded4671'),
+    ('Capitulo 14',   'https://vimeo.com/828889334/c25b1ceb62'),
+    ('Capitulo 15',   'https://vimeo.com/828890481/9e86341402'),
+    ('Capitulo 16',   'https://vimeo.com/828891176/f30d0c698a'),
+    ('Capitulo 17',   'https://vimeo.com/828892828/679f839587'),
+    ('Capitulo 18',   'https://vimeo.com/828893963/c78e0e28c9'),
+    ('Capitulo 19',   'https://vimeo.com/828894481/3665f76746'),
+    ('Capitulo 20',   'https://vimeo.com/828895240/fddafac1e2'),
+    ('Capitulo 21',   'https://vimeo.com/828895753/5d4c219ad6'),
+    ('Capitulo 22',   'https://vimeo.com/828896136/5469431a93'),
+    ('Capitulo 23',   'https://vimeo.com/828896587/6d2b184113'),
+]
+
 _CAPCUT_LESSONS = [
     ('1.1 Introduccion',                              'https://vimeo.com/1031721899', '1. Introduccion al curso y primeros pasos'),
     ('1.2 Como instalar Capcut para PC',              'https://vimeo.com/1031721943', '1. Introduccion al curso y primeros pasos'),
@@ -2100,12 +2127,32 @@ _CAPCUT_LESSONS = [
     ('6.1 Conclusion',                                'https://vimeo.com/1031723091', '6. Conclusion'),
 ]
 
+def _build_programas_sections(course):
+    """Helper: create/ensure '1. Capcut' and '2. Premiere' sections."""
+    existing_titles = {s.title for s in course.sections}
+
+    if '1. Capcut' not in existing_titles:
+        sec = Section(course_id=course.id, title='1. Capcut', order=0)
+        db.session.add(sec)
+        db.session.flush()
+        for l_order, (l_title, l_url, l_group) in enumerate(_CAPCUT_LESSONS):
+            db.session.add(Lesson(section_id=sec.id, title=l_title,
+                                  video_url=l_url, group_label=l_group, order=l_order))
+
+    if '2. Premiere' not in existing_titles:
+        sec2 = Section(course_id=course.id, title='2. Premiere', order=1)
+        db.session.add(sec2)
+        db.session.flush()
+        for l_order, (l_title, l_url) in enumerate(_PREMIERE_LESSONS):
+            db.session.add(Lesson(section_id=sec2.id, title=l_title,
+                                  video_url=l_url, order=l_order))
+
+
 def seed_programas_marca():
     try:
         course = Course.query.filter_by(title='Programas para tu marca').first()
 
         if not course:
-            # Create fresh
             course = Course(
                 title='Programas para tu marca',
                 subtitle='Herramientas y programas para potenciar tu marca personal',
@@ -2115,33 +2162,23 @@ def seed_programas_marca():
             )
             db.session.add(course)
             db.session.flush()
+            _build_programas_sections(course)
         else:
-            # Already exists — check if structure is correct (should have exactly 1 section named '1. Capcut')
             sections = Section.query.filter_by(course_id=course.id).all()
-            if len(sections) == 1 and sections[0].title == '1. Capcut':
-                return  # already in correct shape
-            # Fix: wipe old sections and rebuild
-            for sec in sections:
-                for lesson in sec.lessons:
-                    LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
-                db.session.delete(sec)
-            db.session.flush()
+            titles = {s.title for s in sections}
 
-        sec = Section(course_id=course.id, title='1. Capcut', order=0)
-        db.session.add(sec)
-        db.session.flush()
+            # If old multi-section capcut structure exists, wipe and rebuild
+            if titles not in ({'1. Capcut'}, {'1. Capcut', '2. Premiere'}):
+                for sec in sections:
+                    for lesson in sec.lessons:
+                        LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+                    db.session.delete(sec)
+                db.session.flush()
 
-        for l_order, (l_title, l_url, l_group) in enumerate(_CAPCUT_LESSONS):
-            db.session.add(Lesson(
-                section_id=sec.id,
-                title=l_title,
-                video_url=l_url,
-                group_label=l_group,
-                order=l_order,
-            ))
+            _build_programas_sections(course)
 
         db.session.commit()
-        print('[seed_programas_marca] Curso "Programas para tu marca" creado con 1 carpeta Capcut y subcarpetas.')
+        print('[seed_programas_marca] "Programas para tu marca" actualizado: Capcut + Premiere.')
     except Exception as e:
         print(f'[seed_programas_marca] ERROR: {e}')
         db.session.rollback()
