@@ -115,15 +115,15 @@
   <nav class="flex items-end h-full gap-1 flex-1 overflow-x-auto">
     <a href="{{ url_for('community') }}"
        class="tab-link {% if request.endpoint in ('community','post_detail','new_post') %}active{% endif %}">
-      Comunidad
+      💬 Comunidad
     </a>
     <a href="{{ url_for('courses') }}"
        class="tab-link {% if 'course' in (request.endpoint or '') or request.endpoint=='learn' %}active{% endif %}">
-      Formaciones
+      📚 Formaciones
     </a>
     <a href="{{ url_for('calendar') }}"
        class="tab-link {% if request.endpoint=='calendar' %}active{% endif %}">
-      Clases en directo
+      🎥 Clases en directo
     </a>
     <a href="{{ url_for('leaderboard') }}"
        class="tab-link {% if request.endpoint=='leaderboard' %}active{% endif %}">
