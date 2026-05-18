@@ -61,9 +61,7 @@
     <!-- Cabecera reorden -->
     <div class="flex items-center justify-between text-xs font-medium" style="color:#7c3aed">
       <span>⠿ Arrastra para reordenar carpetas</span>
-      <span id="save-sections-btn"
-            class="hidden px-3 py-1 bg-violet-600 text-white rounded-lg cursor-pointer hover:bg-violet-700 transition"
-            onclick="saveSectionsOrder()">💾 Guardar orden</span>
+      <span id="sections-status" class="text-xs" style="color:#7c3aed"></span>
     </div>
 
     <div id="sections-list" class="space-y-4">
@@ -145,30 +143,22 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const sectionsList = document.getElementById('sections-list');
-const saveSectionsBtn = document.getElementById('save-sections-btn');
+const sectionsStatus = document.getElementById('sections-status');
 
 Sortable.create(sectionsList, {
   handle: '.drag-handle',
   animation: 150,
-  onEnd() {
-    saveSectionsBtn.classList.remove('hidden');
+  async onEnd() {
+    const ids = [...sectionsList.querySelectorAll('[data-id]')].map(el => parseInt(el.dataset.id));
+    sectionsStatus.textContent = 'Guardando…';
+    const res = await fetch('{{ url_for("admin_reorder_sections") }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({order: ids})
+    });
+    sectionsStatus.textContent = res.ok ? '✅ Guardado' : '❌ Error';
+    setTimeout(() => { sectionsStatus.textContent = ''; }, 2000);
   }
 });
-
-async function saveSectionsOrder() {
-  const ids = [...sectionsList.querySelectorAll('[data-id]')].map(el => parseInt(el.dataset.id));
-  const res = await fetch('{{ url_for("admin_reorder_sections") }}', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({order: ids})
-  });
-  if (res.ok) {
-    saveSectionsBtn.textContent = '✅ Guardado';
-    setTimeout(() => {
-      saveSectionsBtn.textContent = '💾 Guardar orden';
-      saveSectionsBtn.classList.add('hidden');
-    }, 2000);
-  }
-}
 </script>
 {% endblock %}

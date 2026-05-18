@@ -13,8 +13,7 @@
 {% if current_user.is_admin %}
 <div class="flex items-center gap-3 mb-4 text-xs font-medium" style="color:#7c3aed">
   <span>⠿ Arrastra para reordenar</span>
-  <span id="save-order-btn" class="hidden px-3 py-1 bg-violet-600 text-white rounded-lg cursor-pointer hover:bg-violet-700 transition"
-        onclick="saveOrder()">💾 Guardar orden</span>
+  <span id="courses-status"></span>
 </div>
 {% endif %}
 
@@ -107,23 +106,23 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const grid = document.getElementById('courses-grid');
+const coursesStatus = document.getElementById('courses-status');
 Sortable.create(grid, {
   handle: '.drag-handle',
   animation: 150,
   filter: '#new-course-card',
-  onEnd() { document.getElementById('save-order-btn').classList.remove('hidden'); }
+  async onEnd() {
+    const ids = [...grid.querySelectorAll('[data-id]')].map(el => parseInt(el.dataset.id));
+    coursesStatus.textContent = 'Guardando…';
+    const res = await fetch('{{ url_for("admin_reorder_courses") }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({order: ids})
+    });
+    coursesStatus.textContent = res.ok ? '✅ Guardado' : '❌ Error';
+    setTimeout(() => { coursesStatus.textContent = ''; }, 2000);
+  }
 });
-async function saveOrder() {
-  const ids = [...grid.querySelectorAll('[data-id]')].map(el => parseInt(el.dataset.id));
-  await fetch('{{ url_for("admin_reorder_courses") }}', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({order: ids})
-  });
-  const btn = document.getElementById('save-order-btn');
-  btn.textContent = '✅ Guardado';
-  setTimeout(() => { btn.textContent = '💾 Guardar orden'; btn.classList.add('hidden'); }, 2000);
-}
 </script>
 {% endif %}
 
