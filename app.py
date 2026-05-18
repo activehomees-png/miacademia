@@ -2078,6 +2078,28 @@ def seed_liberacion_emocional():
         db.session.rollback()
 
 
+_CAPCUT_LESSONS = [
+    ('1.1 Introduccion',                              'https://vimeo.com/1031721899', '1. Introduccion al curso y primeros pasos'),
+    ('1.2 Como instalar Capcut para PC',              'https://vimeo.com/1031721943', '1. Introduccion al curso y primeros pasos'),
+    ('1.3 Cambio de idioma',                          'https://vimeo.com/1031721869', '1. Introduccion al curso y primeros pasos'),
+    ('2.1 Conociendo la interfaz de Capcut',          'https://vimeo.com/1031721976', '2. Conociendo la interfaz de Capcut'),
+    ('3. Atajos y configuracion del teclado',         'https://vimeo.com/1031722032', '3. Atajos y configuracion del teclado'),
+    ('4.1 Primeros pasos en la Creacion de un Proyecto', 'https://vimeo.com/1031722268', '4. Creacion de un Proyecto y Gestion de Archivos'),
+    ('4.2 Ajuste del Formato y Dimensiones del Video','https://vimeo.com/1031722198', '4. Creacion de un Proyecto y Gestion de Archivos'),
+    ('5.1 Como cortar videos',                        'https://vimeo.com/1031723250', '5. Recursos para crear videos virales'),
+    ('5.2 Transiciones y efectos de sonido',          'https://vimeo.com/1031723322', '5. Recursos para crear videos virales'),
+    ('5.3 Capas y Superposicion de Elementos',        'https://vimeo.com/1031723378', '5. Recursos para crear videos virales'),
+    ('5.4 Textos y Subtitulos en Video',              'https://vimeo.com/1031723452', '5. Recursos para crear videos virales'),
+    ('5.5 Audio y efectos de voz',                    'https://vimeo.com/1031723532', '5. Recursos para crear videos virales'),
+    ('5.6 Efectos y animacion',                       'https://vimeo.com/1031723592', '5. Recursos para crear videos virales'),
+    ('5.7 Musica',                                    'https://vimeo.com/1031723678', '5. Recursos para crear videos virales'),
+    ('5.8 Elementos graficos para destacar puntos',   'https://vimeo.com/1031722936', '5. Recursos para crear videos virales'),
+    ('5.9 Zoom y Keyframes',                          'https://vimeo.com/1031722983', '5. Recursos para crear videos virales'),
+    ('5.10 Filtros',                                  'https://vimeo.com/1031723083', '5. Recursos para crear videos virales'),
+    ('5.11 Exportacion del Video',                    'https://vimeo.com/1031723161', '5. Recursos para crear videos virales'),
+    ('6.1 Conclusion',                                'https://vimeo.com/1031723091', '6. Conclusion'),
+]
+
 def seed_programas_marca():
     try:
         if Course.query.filter_by(title='Programas para tu marca').first():
@@ -2092,54 +2114,21 @@ def seed_programas_marca():
         db.session.add(course)
         db.session.flush()
 
-        sections_data = [
-            ('1. Introduccion al curso y primeros pasos', 0, [
-                ('1.1 Introduccion',                  'https://vimeo.com/1031721899'),
-                ('1.2 Como instalar Capcut para PC',  'https://vimeo.com/1031721943'),
-                ('1.3 Cambio de idioma',              'https://vimeo.com/1031721869'),
-            ]),
-            ('2. Conociendo la interfaz de Capcut', 1, [
-                ('2.1 Conociendo la interfaz de Capcut', 'https://vimeo.com/1031721976'),
-            ]),
-            ('3. Atajos y configuracion del teclado', 2, [
-                ('3. Atajos y configuracion del teclado', 'https://vimeo.com/1031722032'),
-            ]),
-            ('4. Creacion de un Proyecto y Gestion de Archivos', 3, [
-                ('4.1 Primeros pasos en la Creacion de un Proyecto',  'https://vimeo.com/1031722268'),
-                ('4.2 Ajuste del Formato y Dimensiones del Video',    'https://vimeo.com/1031722198'),
-            ]),
-            ('5. Recursos para crear videos virales', 4, [
-                ('5.1 Como cortar videos',                    'https://vimeo.com/1031723250'),
-                ('5.2 Transiciones y efectos de sonido',      'https://vimeo.com/1031723322'),
-                ('5.3 Capas y Superposicion de Elementos',    'https://vimeo.com/1031723378'),
-                ('5.4 Textos y Subtitulos en Video',          'https://vimeo.com/1031723452'),
-                ('5.5 Audio y efectos de voz',                'https://vimeo.com/1031723532'),
-                ('5.6 Efectos y animacion',                   'https://vimeo.com/1031723592'),
-                ('5.7 Musica',                                'https://vimeo.com/1031723678'),
-                ('5.8 Elementos graficos para destacar puntos','https://vimeo.com/1031722936'),
-                ('5.9 Zoom y Keyframes',                      'https://vimeo.com/1031722983'),
-                ('5.10 Filtros',                              'https://vimeo.com/1031723083'),
-                ('5.11 Exportacion del Video',                'https://vimeo.com/1031723161'),
-            ]),
-            ('6. Conclusion', 5, [
-                ('6.1 Conclusion', 'https://vimeo.com/1031723091'),
-            ]),
-        ]
+        sec = Section(course_id=course.id, title='1. Capcut', order=0)
+        db.session.add(sec)
+        db.session.flush()
 
-        for sec_title, sec_order, lessons in sections_data:
-            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
-            db.session.add(sec)
-            db.session.flush()
-            for l_order, (l_title, l_url) in enumerate(lessons):
-                db.session.add(Lesson(
-                    section_id=sec.id,
-                    title=l_title,
-                    video_url=l_url,
-                    order=l_order,
-                ))
+        for l_order, (l_title, l_url, l_group) in enumerate(_CAPCUT_LESSONS):
+            db.session.add(Lesson(
+                section_id=sec.id,
+                title=l_title,
+                video_url=l_url,
+                group_label=l_group,
+                order=l_order,
+            ))
 
         db.session.commit()
-        print('[seed_programas_marca] Curso "Programas para tu marca" creado con Edicion CapCut (19 lecciones).')
+        print('[seed_programas_marca] Curso "Programas para tu marca" creado con 1 carpeta Capcut y subcarpetas.')
     except Exception as e:
         print(f'[seed_programas_marca] ERROR: {e}')
         db.session.rollback()
@@ -2213,6 +2202,47 @@ def seed_clases_2026():
     except Exception as e:
         print(f'[seed_clases_2026] ERROR: {e}')
         db.session.rollback()
+
+
+@app.route('/admin/fix-programas-marca')
+@login_required
+@admin_required
+def admin_fix_programas_marca():
+    """Reorganiza Programas para tu marca: todas las lecciones en 1 carpeta Capcut con subcarpetas."""
+    try:
+        course = Course.query.filter_by(title='Programas para tu marca').first()
+        if not course:
+            flash('No se encontro el curso "Programas para tu marca".', 'error')
+            return redirect(url_for('courses'))
+
+        # Delete existing sections (and their lessons/progress)
+        for sec in list(course.sections):
+            for lesson in sec.lessons:
+                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+            db.session.delete(sec)
+        db.session.flush()
+
+        # Create single section with sub-folders via group_label
+        sec = Section(course_id=course.id, title='1. Capcut', order=0)
+        db.session.add(sec)
+        db.session.flush()
+
+        for l_order, (l_title, l_url, l_group) in enumerate(_CAPCUT_LESSONS):
+            db.session.add(Lesson(
+                section_id=sec.id,
+                title=l_title,
+                video_url=l_url,
+                group_label=l_group,
+                order=l_order,
+            ))
+
+        db.session.commit()
+        flash('Programas para tu marca reorganizado: 1 carpeta Capcut con subcarpetas.', 'success')
+        return redirect(url_for('admin_edit_course', course_id=course.id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {e}', 'error')
+        return redirect(url_for('courses'))
 
 
 @app.route('/admin/fix-liberacion-emocional')
