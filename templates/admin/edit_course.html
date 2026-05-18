@@ -56,11 +56,23 @@
   </div>
 
   <!-- Secciones y lecciones -->
-  <div class="space-y-4">
+  <div class="space-y-3">
+
+    <!-- Cabecera reorden -->
+    <div class="flex items-center justify-between text-xs font-medium" style="color:#7c3aed">
+      <span>⠿ Arrastra para reordenar carpetas</span>
+      <span id="save-sections-btn"
+            class="hidden px-3 py-1 bg-violet-600 text-white rounded-lg cursor-pointer hover:bg-violet-700 transition"
+            onclick="saveSectionsOrder()">💾 Guardar orden</span>
+    </div>
+
+    <div id="sections-list" class="space-y-4">
     {% for section in course.sections %}
-    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-bold text-[#18181b]">📁 {{ section.title }}</p>
+    <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm" data-id="{{ section.id }}">
+      <!-- Drag handle -->
+      <div class="flex items-center gap-2 mb-3">
+        <span class="drag-handle cursor-grab text-[#a1a1aa] hover:text-[#52525b] select-none text-lg leading-none">⠿</span>
+        <p class="text-sm font-bold text-[#18181b] flex-1">📁 {{ section.title }}</p>
         <form method="POST" action="{{ url_for('admin_delete_section', section_id=section.id) }}"
               onsubmit="return confirm('¿Eliminar sección y sus lecciones?')">
           <button type="submit" class="text-xs text-[#a1a1aa] hover:text-red-500 transition">✕ Eliminar</button>
@@ -113,6 +125,7 @@
       </details>
     </div>
     {% endfor %}
+    </div><!-- end #sections-list -->
 
     <!-- Nueva sección -->
     <div class="bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
@@ -126,4 +139,36 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+const sectionsList = document.getElementById('sections-list');
+const saveSectionsBtn = document.getElementById('save-sections-btn');
+
+Sortable.create(sectionsList, {
+  handle: '.drag-handle',
+  animation: 150,
+  onEnd() {
+    saveSectionsBtn.classList.remove('hidden');
+  }
+});
+
+async function saveSectionsOrder() {
+  const ids = [...sectionsList.querySelectorAll('[data-id]')].map(el => parseInt(el.dataset.id));
+  const res = await fetch('{{ url_for("admin_reorder_sections") }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order: ids})
+  });
+  if (res.ok) {
+    saveSectionsBtn.textContent = '✅ Guardado';
+    setTimeout(() => {
+      saveSectionsBtn.textContent = '💾 Guardar orden';
+      saveSectionsBtn.classList.add('hidden');
+    }, 2000);
+  }
+}
+</script>
 {% endblock %}

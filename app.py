@@ -733,6 +733,16 @@ def admin_reorder_courses():
     db.session.commit()
     return ('', 204)
 
+@app.route('/admin/secciones/reordenar', methods=['POST'])
+@login_required
+@admin_required
+def admin_reorder_sections():
+    order = request.json.get('order', [])
+    for i, section_id in enumerate(order):
+        Section.query.filter_by(id=section_id).update({'order': i})
+    db.session.commit()
+    return ('', 204)
+
 @app.route('/admin/cursos/<int:course_id>/borrar', methods=['POST'])
 @login_required
 @admin_required
