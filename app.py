@@ -383,7 +383,8 @@ def add_comment_ajax(post_id):
                f'💬 {current_user.username} comentó en tu post "{post.title[:50]}"',
                f'/comunidad')
         db.session.commit()
-    return jsonify({'ok': True, 'username': current_user.username,
+    return jsonify({'ok': True, 'comment_id': c.id,
+                    'username': current_user.username,
                     'initials': current_user.initials, 'content': content,
                     'timeago': 'ahora mismo',
                     'has_avatar': bool(current_user.avatar_data),
@@ -411,6 +412,77 @@ def pin_post(post_id):
     post.pinned = not post.pinned
     db.session.commit()
     return redirect(url_for('post_detail', post_id=post_id))
+
+@app.route('/comunidad/post/<int:post_id>/borrar', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if not current_user.is_admin and post.user_id != current_user.id:
+        abort(403)
+    db.session.delete(post)
+    db.session.commit()
+    if request.is_json:
+        return jsonify({'ok': True})
+    return redirect(url_for('community'))
+
+@app.route('/comunidad/post/<int:post_id>/editar', methods=['POST'])
+@login_required
+def edit_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if not current_user.is_admin and post.user_id != current_user.id:
+        abort(403)
+    data = request.json if request.is_json else request.form
+    title       = (data.get('title', '') or '').strip()
+    content     = (data.get('content', '') or '').strip()
+    category_id = data.get('category_id', None)
+    if category_id:
+        try:
+            category_id = int(category_id)
+        except (ValueError, TypeError):
+            category_id = None
+    if title and content:
+        post.title       = title
+        post.content     = content
+        post.category_id = category_id or None
+        db.session.commit()
+    if request.is_json:
+        return jsonify({'ok': True, 'title': post.title, 'content': post.content})
+    return redirect(url_for('community'))
+
+@app.route('/comunidad/comentario/<int:comment_id>/borrar', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if not current_user.is_admin and comment.user_id != current_user.id:
+        abort(403)
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/comunidad/comentario/<int:comment_id>/editar', methods=['POST'])
+@login_required
+def edit_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if not current_user.is_admin and comment.user_id != current_user.id:
+        abort(403)
+    content = (request.json.get('content', '') if request.is_json else request.form.get('content', '')).strip()
+    if content:
+        comment.content = content
+        db.session.commit()
+    return jsonify({'ok': True, 'content': comment.content})
+
+@app.route('/comunidad/comentario/<int:comment_id>/like', methods=['POST'])
+@login_required
+def like_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if current_user in comment.likes:
+        comment.likes.remove(current_user)
+        liked = False
+    else:
+        comment.likes.append(current_user)
+        liked = True
+    db.session.commit()
+    return jsonify({'likes': len(comment.likes), 'liked': liked})
 
 # ── COURSES ───────────────────────────────────────────────────────────────────
 
@@ -3030,6 +3102,20 @@ with app.app_context():
             _conn.commit()
     except Exception as _e:
         print(f'[migration] group_label: {_e}')
+
+    # DB migration: comment_likes table
+    try:
+        with db.engine.connect() as _conn:
+            _conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS comment_likes (
+                    user_id    INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+                    comment_id INTEGER NOT NULL REFERENCES comment(id) ON DELETE CASCADE,
+                    PRIMARY KEY (user_id, comment_id)
+                )
+            """))
+            _conn.commit()
+    except Exception as _e:
+        print(f'[migration] comment_likes: {_e}')
 
     seed_fase5()
     fix_fase5_carpeta6()

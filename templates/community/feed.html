@@ -63,7 +63,7 @@
     <!-- Posts -->
     <div class="space-y-3">
       {% for post in posts %}
-      <div class="bg-white border border-[#e4e4e7] rounded-xl shadow-sm overflow-hidden">
+      <div class="bg-white border border-[#e4e4e7] rounded-xl shadow-sm overflow-hidden" id="post-card-{{ post.id }}">
 
         <!-- Post header + content -->
         <div class="p-4 flex gap-3">
@@ -86,16 +86,26 @@
                 {{ post.category.emoji }} {{ post.category.name }}
               </span>
               {% endif %}
-              {% if current_user.is_admin %}
-              <form method="POST" action="{{ url_for('pin_post', post_id=post.id) }}" class="ml-auto">
-                <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-amber-500 transition">
-                  {{ '📌 Desfijar' if post.pinned else '📌 Fijar' }}
-                </button>
-              </form>
-              {% endif %}
+
+              <!-- Admin / owner actions (pin, edit, delete) -->
+              <div class="ml-auto flex items-center gap-2">
+                {% if current_user.is_admin %}
+                <form method="POST" action="{{ url_for('pin_post', post_id=post.id) }}">
+                  <button type="submit" class="text-[10px] text-[#a1a1aa] hover:text-amber-500 transition">
+                    {{ '📌 Desfijar' if post.pinned else '📌 Fijar' }}
+                  </button>
+                </form>
+                {% endif %}
+                {% if current_user.is_admin or post.user_id == current_user.id %}
+                <button onclick="openEditPostModal({{ post.id }}, {{ post.title | tojson }}, {{ post.content | tojson }}, {{ post.category_id or 'null' }})"
+                        class="text-[10px] text-[#a1a1aa] hover:text-violet-600 transition">✏️ Editar</button>
+                <button onclick="deletePost({{ post.id }})"
+                        class="text-[10px] text-[#a1a1aa] hover:text-red-500 transition">🗑 Borrar</button>
+                {% endif %}
+              </div>
             </div>
-            <p class="font-semibold text-[#18181b] text-sm leading-snug">{{ post.title }}</p>
-            <p class="text-[#71717a] text-sm mt-1 leading-relaxed whitespace-pre-wrap">{{ post.content }}</p>
+            <p class="font-semibold text-[#18181b] text-sm leading-snug" id="post-title-{{ post.id }}">{{ post.title }}</p>
+            <p class="text-[#71717a] text-sm mt-1 leading-relaxed whitespace-pre-wrap" id="post-content-{{ post.id }}">{{ post.content }}</p>
 
             <!-- Actions -->
             <div class="flex items-center gap-4 mt-3 pt-3 border-t border-[#f4f4f5]">
@@ -118,7 +128,7 @@
           <!-- Existing comments -->
           <div class="px-4 pt-3 space-y-3" id="comment-list-{{ post.id }}">
             {% for comment in post.comments %}
-            <div class="flex gap-2.5">
+            <div class="flex gap-2.5" id="comment-{{ comment.id }}">
               <div class="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center
                           text-white text-[10px] font-bold flex-shrink-0 mt-0.5 overflow-hidden">
                 {% if comment.author.avatar_data %}
@@ -129,8 +139,32 @@
                 <div class="flex items-center gap-2 mb-0.5">
                   <span class="text-xs font-semibold text-[#18181b]">{{ comment.author.username }}</span>
                   <span class="text-[10px] text-[#a1a1aa]">{{ comment.created_at | timeago }}</span>
+                  <!-- Like comentario -->
+                  <button onclick="toggleCommentLike({{ comment.id }}, this)"
+                          class="ml-1 flex items-center gap-1 text-[10px] text-[#a1a1aa] hover:text-rose-500 transition">
+                    <span class="clike-icon">{{ '❤️' if current_user in comment.likes else '🤍' }}</span>
+                    <span class="clike-count">{{ comment.likes | length }}</span>
+                  </button>
+                  <!-- Edit / Delete (owner or admin) -->
+                  {% if current_user.is_admin or comment.user_id == current_user.id %}
+                  <button onclick="startEditComment({{ comment.id }})"
+                          class="ml-1 text-[10px] text-[#a1a1aa] hover:text-violet-600 transition">✏️</button>
+                  <button onclick="deleteComment({{ comment.id }}, {{ post.id }})"
+                          class="text-[10px] text-[#a1a1aa] hover:text-red-500 transition">✕</button>
+                  {% endif %}
                 </div>
-                <p class="text-xs text-[#52525b] leading-relaxed">{{ comment.content }}</p>
+                <p class="text-xs text-[#52525b] leading-relaxed comment-text-{{ comment.id }}">{{ comment.content }}</p>
+                <!-- Inline edit area (hidden) -->
+                <div class="edit-area-{{ comment.id }} hidden mt-1.5 flex gap-1.5">
+                  <textarea rows="2"
+                    class="input text-xs py-1 resize-none flex-1 edit-textarea-{{ comment.id }}">{{ comment.content }}</textarea>
+                  <div class="flex flex-col gap-1">
+                    <button onclick="saveEditComment({{ comment.id }})"
+                            class="btn btn-primary btn-sm text-[10px] px-2 py-1">✓</button>
+                    <button onclick="cancelEditComment({{ comment.id }})"
+                            class="btn btn-secondary btn-sm text-[10px] px-2 py-1">✕</button>
+                  </div>
+                </div>
               </div>
             </div>
             {% endfor %}
@@ -288,6 +322,9 @@
 </div>
 
 <script>
+const CURRENT_USER_ID = {{ current_user.id }};
+const IS_ADMIN = {{ 'true' if current_user.is_admin else 'false' }};
+
 function toggleComments(postId) {
   const el = document.getElementById('comments-' + postId);
   el.classList.toggle('hidden');
@@ -301,6 +338,64 @@ async function toggleLike(postId, btn) {
   const data = await res.json();
   btn.querySelector('.like-icon').textContent  = data.liked ? '❤️' : '🤍';
   btn.querySelector('.like-count').textContent = data.likes;
+}
+
+async function toggleCommentLike(commentId, btn) {
+  const res  = await fetch(`/comunidad/comentario/${commentId}/like`, {method:'POST'});
+  const data = await res.json();
+  btn.querySelector('.clike-icon').textContent  = data.liked ? '❤️' : '🤍';
+  btn.querySelector('.clike-count').textContent = data.likes;
+}
+
+async function deletePost(postId) {
+  if (!confirm('¿Borrar este post? Esta acción no se puede deshacer.')) return;
+  const res = await fetch(`/comunidad/post/${postId}/borrar`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    const card = document.getElementById('post-card-' + postId);
+    if (card) card.remove();
+  }
+}
+
+async function deleteComment(commentId, postId) {
+  if (!confirm('¿Borrar este comentario?')) return;
+  const res = await fetch(`/comunidad/comentario/${commentId}/borrar`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    const el = document.getElementById('comment-' + commentId);
+    if (el) el.remove();
+    const counter = document.querySelector('.comment-count-' + postId);
+    if (counter) counter.textContent = Math.max(0, parseInt(counter.textContent) - 1);
+  }
+}
+
+function startEditComment(commentId) {
+  document.querySelector('.comment-text-' + commentId).classList.add('hidden');
+  const area = document.querySelector('.edit-area-' + commentId);
+  area.classList.remove('hidden');
+  area.classList.add('flex');
+  document.querySelector('.edit-textarea-' + commentId).focus();
+}
+
+function cancelEditComment(commentId) {
+  document.querySelector('.comment-text-' + commentId).classList.remove('hidden');
+  const area = document.querySelector('.edit-area-' + commentId);
+  area.classList.add('hidden');
+  area.classList.remove('flex');
+}
+
+async function saveEditComment(commentId) {
+  const content = document.querySelector('.edit-textarea-' + commentId).value.trim();
+  if (!content) return;
+  const res  = await fetch(`/comunidad/comentario/${commentId}/editar`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({content})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    document.querySelector('.comment-text-' + commentId).textContent = data.content;
+    cancelEditComment(commentId);
+  }
 }
 
 async function submitComment(postId, textarea) {
@@ -317,8 +412,10 @@ async function submitComment(postId, textarea) {
   textarea.style.height = 'auto';
 
   const list = document.getElementById('comment-list-' + postId);
+  const cid  = data.comment_id;
   const div  = document.createElement('div');
   div.className = 'flex gap-2.5';
+  div.id = 'comment-' + cid;
   const avatarHtml = data.has_avatar
     ? `<img src="/avatar/${data.user_id}" class="w-full h-full object-cover"/>`
     : data.initials;
@@ -328,17 +425,36 @@ async function submitComment(postId, textarea) {
       <div class="flex items-center gap-2 mb-0.5">
         <span class="text-xs font-semibold text-[#18181b]">${data.username}</span>
         <span class="text-[10px] text-[#a1a1aa]">ahora mismo</span>
+        <button onclick="toggleCommentLike(${cid}, this)"
+                class="ml-1 flex items-center gap-1 text-[10px] text-[#a1a1aa] hover:text-rose-500 transition">
+          <span class="clike-icon">🤍</span><span class="clike-count">0</span>
+        </button>
+        <button onclick="startEditComment(${cid})"
+                class="ml-1 text-[10px] text-[#a1a1aa] hover:text-violet-600 transition">✏️</button>
+        <button onclick="deleteComment(${cid}, ${postId})"
+                class="text-[10px] text-[#a1a1aa] hover:text-red-500 transition">✕</button>
       </div>
-      <p class="text-xs text-[#52525b] leading-relaxed">${data.content}</p>
+      <p class="text-xs text-[#52525b] leading-relaxed comment-text-${cid}">${escHtml(data.content)}</p>
+      <div class="edit-area-${cid} hidden mt-1.5 flex gap-1.5">
+        <textarea rows="2" class="input text-xs py-1 resize-none flex-1 edit-textarea-${cid}">${escHtml(data.content)}</textarea>
+        <div class="flex flex-col gap-1">
+          <button onclick="saveEditComment(${cid})" class="btn btn-primary btn-sm text-[10px] px-2 py-1">✓</button>
+          <button onclick="cancelEditComment(${cid})" class="btn btn-secondary btn-sm text-[10px] px-2 py-1">✕</button>
+        </div>
+      </div>
     </div>`;
   list.appendChild(div);
 
   const counter = document.querySelector('.comment-count-' + postId);
   if (counter) counter.textContent = parseInt(counter.textContent) + 1;
 }
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 
-<!-- Modal nuevo post -->
+<!-- Modal nuevo post / editar post -->
 <div id="post-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden"
      style="background:rgba(0,0,0,0.5)" onclick="closePostModal(event)">
   <div class="w-full max-w-xl mx-4 rounded-2xl shadow-2xl overflow-hidden"
@@ -347,14 +463,14 @@ async function submitComment(postId, textarea) {
 
     <!-- Header -->
     <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--border)">
-      <h2 class="font-bold text-base" style="color:var(--text1)">✏️ Crear post</h2>
+      <h2 class="font-bold text-base" style="color:var(--text1)" id="post-modal-title">✏️ Crear post</h2>
       <button onclick="document.getElementById('post-modal').classList.add('hidden');document.body.style.overflow='';"
               class="w-7 h-7 rounded-full flex items-center justify-center text-lg transition hover:opacity-70"
               style="background:var(--hover-bg);color:var(--text3)">✕</button>
     </div>
 
-    <!-- Form -->
-    <form method="POST" action="{{ url_for('new_post') }}" class="p-5 space-y-4">
+    <!-- Form new post -->
+    <form id="post-form-new" method="POST" action="{{ url_for('new_post') }}" class="p-5 space-y-4">
       <div>
         <label class="block text-xs font-medium mb-1.5" style="color:var(--text3)">Categoría</label>
         <select name="category_id" class="input">
@@ -379,15 +495,81 @@ async function submitComment(postId, textarea) {
         <button type="submit" class="btn btn-primary">Publicar</button>
       </div>
     </form>
+
+    <!-- Form edit post (hidden by default) -->
+    <div id="post-form-edit" class="p-5 space-y-4 hidden">
+      <input type="hidden" id="edit-post-id"/>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text3)">Categoría</label>
+        <select id="edit-post-cat" class="input">
+          <option value="">Sin categoría</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text3)">Título</label>
+        <input type="text" id="edit-post-title-input" class="input" maxlength="200" required/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text3)">Contenido</label>
+        <textarea id="edit-post-content-input" class="input" rows="6" required style="resize:vertical"></textarea>
+      </div>
+      <div class="flex gap-3 justify-end pt-1">
+        <button type="button" onclick="document.getElementById('post-modal').classList.add('hidden');document.body.style.overflow='';"
+                class="btn btn-secondary">Cancelar</button>
+        <button type="button" onclick="saveEditPost()" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 function openPostModal() {
+  document.getElementById('post-form-new').classList.remove('hidden');
+  document.getElementById('post-form-edit').classList.add('hidden');
+  document.getElementById('post-modal-title').textContent = '✏️ Crear post';
   document.getElementById('post-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => { const t = document.querySelector('#post-modal input[name=title]'); if(t) t.focus(); }, 100);
+  setTimeout(() => { const t = document.querySelector('#post-form-new input[name=title]'); if(t) t.focus(); }, 100);
 }
+
+function openEditPostModal(postId, title, content, catId) {
+  document.getElementById('post-form-new').classList.add('hidden');
+  document.getElementById('post-form-edit').classList.remove('hidden');
+  document.getElementById('post-modal-title').textContent = '✏️ Editar post';
+  document.getElementById('edit-post-id').value = postId;
+  document.getElementById('edit-post-title-input').value = title;
+  document.getElementById('edit-post-content-input').value = content;
+  const sel = document.getElementById('edit-post-cat');
+  sel.value = catId !== null ? String(catId) : '';
+  document.getElementById('post-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+async function saveEditPost() {
+  const postId  = document.getElementById('edit-post-id').value;
+  const title   = document.getElementById('edit-post-title-input').value.trim();
+  const content = document.getElementById('edit-post-content-input').value.trim();
+  const catId   = document.getElementById('edit-post-cat').value;
+  if (!title || !content) return;
+  const res  = await fetch(`/comunidad/post/${postId}/editar`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, content, category_id: catId || null})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    const tEl = document.getElementById('post-title-' + postId);
+    const cEl = document.getElementById('post-content-' + postId);
+    if (tEl) tEl.textContent = data.title;
+    if (cEl) cEl.textContent = data.content;
+    document.getElementById('post-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+}
+
 function closePostModal(e) {
   if (e.target === document.getElementById('post-modal')) {
     document.getElementById('post-modal').classList.add('hidden');

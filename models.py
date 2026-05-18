@@ -10,6 +10,11 @@ post_likes = db.Table('post_likes',
     db.Column('post_id', db.Integer, db.ForeignKey('post.id'), primary_key=True),
 )
 
+comment_likes = db.Table('comment_likes',
+    db.Column('user_id',    db.Integer, db.ForeignKey('user.id'),    primary_key=True),
+    db.Column('comment_id', db.Integer, db.ForeignKey('comment.id'), primary_key=True),
+)
+
 
 class User(UserMixin, db.Model):
     id           = db.Column(db.Integer, primary_key=True)
@@ -76,6 +81,9 @@ class Comment(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content    = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    likes = db.relationship('User', secondary='comment_likes',
+                            backref=db.backref('liked_comments', lazy=True))
 
 
 class Course(db.Model):

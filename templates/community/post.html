@@ -28,10 +28,10 @@
           </span>
           {% endif %}
         </div>
-        <h1 class="text-lg font-bold text-[#18181b] mb-3">{{ post.title }}</h1>
-        <div class="text-[#52525b] text-sm leading-relaxed whitespace-pre-wrap">{{ post.content }}</div>
+        <h1 class="text-lg font-bold text-[#18181b] mb-1" id="post-title-display">{{ post.title }}</h1>
+        <div class="text-[#52525b] text-sm leading-relaxed whitespace-pre-wrap" id="post-content-display">{{ post.content }}</div>
 
-        <div class="flex items-center gap-4 mt-5 pt-4 border-t border-[#f4f4f5]">
+        <div class="flex items-center gap-4 mt-5 pt-4 border-t border-[#f4f4f5] flex-wrap">
           <button onclick="toggleLike({{ post.id }})"
             class="flex items-center gap-2 text-sm text-[#71717a] hover:text-rose-500 transition" id="like-btn">
             <span id="like-icon">{{ '❤️' if current_user in post.likes else '🤍' }}</span>
@@ -45,6 +45,22 @@
             </button>
           </form>
           {% endif %}
+          {% if current_user.is_admin or post.user_id == current_user.id %}
+          <button onclick="openEditPostModal()"
+                  class="text-xs text-[#a1a1aa] hover:text-violet-600 transition {% if not current_user.is_admin %}ml-auto{% endif %}">✏️ Editar</button>
+          <button onclick="deleteThisPost({{ post.id }})"
+                  class="text-xs text-[#a1a1aa] hover:text-red-500 transition">🗑 Borrar</button>
+          {% endif %}
+        </div>
+
+        <!-- Edit post inline form (hidden) -->
+        <div id="edit-post-form" class="hidden mt-4 space-y-3">
+          <input type="text" id="edit-title-input" class="input text-sm" value="{{ post.title }}"/>
+          <textarea id="edit-content-input" class="input text-sm" rows="5" style="resize:vertical">{{ post.content }}</textarea>
+          <div class="flex gap-2 justify-end">
+            <button onclick="cancelEditPost()" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button onclick="saveEditPost({{ post.id }})" class="btn btn-primary btn-sm">Guardar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -52,26 +68,46 @@
 
   <!-- Comentarios -->
   <div class="mt-5" id="comments">
-    <h2 class="text-sm font-semibold text-[#71717a] mb-4">{{ post.comments | length }} comentario{{ 's' if post.comments | length != 1 }}</h2>
+    <h2 class="text-sm font-semibold text-[#71717a] mb-4" id="comment-count-label">{{ post.comments | length }} comentario{{ 's' if post.comments | length != 1 }}</h2>
 
-    <div class="space-y-3 mb-5">
+    <div class="space-y-3 mb-5" id="comment-list">
       {% for comment in post.comments %}
-      <div class="flex gap-3">
+      <div class="flex gap-3" id="comment-{{ comment.id }}">
         <div class="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5 overflow-hidden">
           {% if comment.author.avatar_data %}
           <img src="{{ url_for('serve_avatar', user_id=comment.author.id) }}" class="w-full h-full object-cover"/>
           {% else %}{{ comment.author.initials }}{% endif %}
         </div>
         <div class="flex-1 bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
-          <div class="flex items-center gap-2 mb-1">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
             <span class="text-sm font-semibold text-[#18181b]">{{ comment.author.username }}</span>
             <span class="text-xs text-[#a1a1aa]">{{ comment.created_at | timeago }}</span>
+            <!-- Like comentario -->
+            <button onclick="toggleCommentLike({{ comment.id }}, this)"
+                    class="ml-1 flex items-center gap-1 text-xs text-[#a1a1aa] hover:text-rose-500 transition">
+              <span class="clike-icon">{{ '❤️' if current_user in comment.likes else '🤍' }}</span>
+              <span class="clike-count">{{ comment.likes | length }}</span>
+            </button>
+            {% if current_user.is_admin or comment.user_id == current_user.id %}
+            <button onclick="startEditComment({{ comment.id }})"
+                    class="ml-1 text-xs text-[#a1a1aa] hover:text-violet-600 transition">✏️</button>
+            <button onclick="deleteComment({{ comment.id }})"
+                    class="text-xs text-[#a1a1aa] hover:text-red-500 transition">✕ Borrar</button>
+            {% endif %}
           </div>
-          <p class="text-sm text-[#52525b] whitespace-pre-wrap">{{ comment.content }}</p>
+          <p class="text-sm text-[#52525b] whitespace-pre-wrap comment-text-{{ comment.id }}">{{ comment.content }}</p>
+          <!-- Inline edit -->
+          <div class="edit-area-{{ comment.id }} hidden mt-2 flex gap-2">
+            <textarea rows="2" class="input text-sm py-1 resize-none flex-1 edit-textarea-{{ comment.id }}">{{ comment.content }}</textarea>
+            <div class="flex flex-col gap-1">
+              <button onclick="saveEditComment({{ comment.id }})" class="btn btn-primary btn-sm text-xs px-2 py-1">✓</button>
+              <button onclick="cancelEditComment({{ comment.id }})" class="btn btn-secondary btn-sm text-xs px-2 py-1">✕</button>
+            </div>
+          </div>
         </div>
       </div>
       {% else %}
-      <p class="text-sm text-[#a1a1aa]">Sé el primero en comentar.</p>
+      <p class="text-sm text-[#a1a1aa]" id="no-comments-msg">Sé el primero en comentar.</p>
       {% endfor %}
     </div>
 
@@ -97,6 +133,90 @@ async function toggleLike(postId) {
   const data = await res.json();
   document.getElementById('like-icon').textContent  = data.liked ? '❤️' : '🤍';
   document.getElementById('like-count').textContent = data.likes;
+}
+
+async function toggleCommentLike(commentId, btn) {
+  const res  = await fetch(`/comunidad/comentario/${commentId}/like`, {method:'POST'});
+  const data = await res.json();
+  btn.querySelector('.clike-icon').textContent  = data.liked ? '❤️' : '🤍';
+  btn.querySelector('.clike-count').textContent = data.likes;
+}
+
+async function deleteThisPost(postId) {
+  if (!confirm('¿Borrar este post? Esta acción no se puede deshacer.')) return;
+  const res = await fetch(`/comunidad/post/${postId}/borrar`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) window.location.href = '/comunidad';
+}
+
+async function deleteComment(commentId) {
+  if (!confirm('¿Borrar este comentario?')) return;
+  const res = await fetch(`/comunidad/comentario/${commentId}/borrar`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById('comment-' + commentId)?.remove();
+    const lbl = document.getElementById('comment-count-label');
+    const cur = parseInt(lbl?.textContent) || 1;
+    if (lbl) lbl.textContent = (cur - 1) + ' comentario' + (cur - 1 !== 1 ? 's' : '');
+  }
+}
+
+function startEditComment(commentId) {
+  document.querySelector('.comment-text-' + commentId).classList.add('hidden');
+  const area = document.querySelector('.edit-area-' + commentId);
+  area.classList.remove('hidden');
+  area.classList.add('flex');
+  document.querySelector('.edit-textarea-' + commentId).focus();
+}
+
+function cancelEditComment(commentId) {
+  document.querySelector('.comment-text-' + commentId).classList.remove('hidden');
+  const area = document.querySelector('.edit-area-' + commentId);
+  area.classList.add('hidden');
+  area.classList.remove('flex');
+}
+
+async function saveEditComment(commentId) {
+  const content = document.querySelector('.edit-textarea-' + commentId).value.trim();
+  if (!content) return;
+  const res  = await fetch(`/comunidad/comentario/${commentId}/editar`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({content})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    document.querySelector('.comment-text-' + commentId).textContent = data.content;
+    cancelEditComment(commentId);
+  }
+}
+
+function openEditPostModal() {
+  document.getElementById('post-title-display').classList.add('hidden');
+  document.getElementById('post-content-display').classList.add('hidden');
+  document.getElementById('edit-post-form').classList.remove('hidden');
+  document.getElementById('edit-title-input').focus();
+}
+
+function cancelEditPost() {
+  document.getElementById('post-title-display').classList.remove('hidden');
+  document.getElementById('post-content-display').classList.remove('hidden');
+  document.getElementById('edit-post-form').classList.add('hidden');
+}
+
+async function saveEditPost(postId) {
+  const title   = document.getElementById('edit-title-input').value.trim();
+  const content = document.getElementById('edit-content-input').value.trim();
+  if (!title || !content) return;
+  const res  = await fetch(`/comunidad/post/${postId}/editar`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, content})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById('post-title-display').textContent = data.title;
+    document.getElementById('post-content-display').textContent = data.content;
+    cancelEditPost();
+  }
 }
 </script>
 {% endblock %}
