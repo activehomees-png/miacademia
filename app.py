@@ -1928,6 +1928,65 @@ def seed_bono_habitos():
         db.session.rollback()
 
 
+def seed_bono_organizacion():
+    """Insert '3. Organización para creadores' into FASE 5 at order 12,
+    shifting any existing sections with order >= 12 up by 1."""
+    try:
+        course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
+        if not course:
+            return
+        if Section.query.filter_by(course_id=course.id, title='3. Organización para creadores').first():
+            return
+        # Shift sections with order >= 12 up by 1 to make room
+        for sec in Section.query.filter_by(course_id=course.id).filter(Section.order >= 12).all():
+            sec.order += 1
+        db.session.flush()
+
+        sec = Section(course_id=course.id, title='3. Organización para creadores', order=12)
+        db.session.add(sec)
+        db.session.flush()
+
+        _org_lessons = [
+            ('1. Introduccion (Valores)',                    'https://vimeo.com/792949917/3501d6b099'),
+            ('2. La importancia de la organizacion',         'https://vimeo.com/792950165/8bb066c84e'),
+            ('3. La concentracion',                          'https://vimeo.com/792950514/2d6ae9c0ae'),
+            ('4. Distracciones',                             'https://vimeo.com/792950884/59d066a593'),
+            ('5. Ladrones de tiempo',                        'https://vimeo.com/792951168/1b496771ac'),
+            ('6. Decir que no',                              'https://vimeo.com/792951669/aa2eeef11f'),
+            ('7. Tu energia',                                'https://vimeo.com/792952021/c4c9d1a216'),
+            ('8. Multitarea y mision de vida',               'https://vimeo.com/792952713/45ca8844e5'),
+            ('9. Empezar a organizar nuestra vida',          'https://vimeo.com/792953317/c1f6008c6f'),
+            ('10. Tus 4 Roles',                              'https://vimeo.com/792954676/9bec279e9f'),
+            ('11. Objetivos',                                'https://vimeo.com/792955039/28608189dd'),
+            ('12. Los 3 objetivos del dia',                  'https://vimeo.com/792955692/96cda7441c'),
+            ('13. Cortafuegos',                              'https://vimeo.com/792956258/e7e477d773'),
+            ('14. Capsulas',                                 'https://vimeo.com/792956721/8f32e161d6'),
+            ('15. Comprometerse',                            'https://vimeo.com/792957399/ce80a7c8de'),
+            ('16. Minimalismo',                              'https://vimeo.com/792957978/e9eabf25b1'),
+            ('17. Delegar y optimizar',                      'https://vimeo.com/792959094/c5962fdb7e'),
+            ('18. Automatizacion',                           'https://vimeo.com/792960902/00db3c90ee'),
+            ('19. El correo electronico',                    'https://vimeo.com/792962419/7bc02d0c61'),
+            ('20. Final + Preguntas y Respuestas',           'https://vimeo.com/792962621/f3aff50888'),
+            ('21. Preguntas y Respuestas 1',                 'https://vimeo.com/792964436/ca0d78f106'),
+            ('22. Preguntas y Respuestas 2',                 'https://vimeo.com/792949615/f89a85ec32'),
+            ('23. BONO Como funciona Notion',                'https://youtu.be/_W_hyG5qNq0?si=bkSO6HcfUjGK-WM7'),
+            ('24. Organizacion para creadores de contenido', 'https://vimeo.com/952664864'),
+        ]
+        for l_order, (l_title, l_url) in enumerate(_org_lessons):
+            db.session.add(Lesson(
+                section_id=sec.id,
+                title=l_title,
+                video_url=l_url,
+                order=l_order,
+            ))
+
+        db.session.commit()
+        print('[seed_bono_organizacion] Seccion "3. Organizacion para creadores" anadida a FASE 5.')
+    except Exception as e:
+        print(f'[seed_bono_organizacion] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/update-descriptions', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -2088,6 +2147,7 @@ with app.app_context():
 
     seed_fase5()
     seed_bono_habitos()
+    seed_bono_organizacion()
 
     # Backfill points for existing lesson completions and comments
     try:
