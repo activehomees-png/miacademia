@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Clases en directo{% endblock %}
-{% block content_class %}max-w-5xl mx-auto{% endblock %}
+{% block content_class %}max-w-7xl mx-auto{% endblock %}
 
 {% block head %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet"/>
@@ -39,11 +39,11 @@
   {% endif %}
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
 
   <!-- Calendario -->
-  <div class="lg:col-span-2 bg-white border border-[#e4e4e7] rounded-xl p-4 shadow-sm">
-    <div id="calendar"></div>
+  <div class="lg:col-span-3 bg-white border border-[#e4e4e7] rounded-xl p-5 shadow-sm">
+    <div id="calendar" style="min-height:600px"></div>
   </div>
 
   <!-- Próximas clases -->
