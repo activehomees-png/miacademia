@@ -417,7 +417,7 @@ def pin_post(post_id):
 @app.route('/cursos')
 @login_required
 def courses():
-    all_courses  = Course.query.filter_by(is_published=True).all()
+    all_courses  = Course.query.filter_by(is_published=True).order_by(Course.order.asc(), Course.created_at.asc()).all()
     enrolled_ids = {e.course_id for e in current_user.enrollments}
     return render_template('courses/catalog.html',
                            courses=all_courses, enrolled_ids=enrolled_ids)
@@ -712,6 +712,16 @@ def admin_edit_course(course_id):
                 db.session.commit()
                 flash('Sección añadida.', 'success')
     return render_template('admin/edit_course.html', course=course)
+
+@app.route('/admin/cursos/reordenar', methods=['POST'])
+@login_required
+@admin_required
+def admin_reorder_courses():
+    order = request.json.get('order', [])
+    for i, course_id in enumerate(order):
+        Course.query.filter_by(id=course_id).update({'order': i})
+    db.session.commit()
+    return ('', 204)
 
 @app.route('/admin/cursos/<int:course_id>/borrar', methods=['POST'])
 @login_required
@@ -1835,6 +1845,7 @@ with app.app_context():
             # course cover image (binary)
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS cover_data BYTEA"))
             conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS cover_mime VARCHAR(50) DEFAULT 'image/jpeg'"))
+            conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS \"order\" INTEGER DEFAULT 0"))
             # lesson inline images for rich-text descriptions
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS lesson_image (

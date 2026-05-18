@@ -87,6 +87,7 @@ class Course(db.Model):
     cover_data   = db.Column(db.LargeBinary, nullable=True)
     cover_mime   = db.Column(db.String(50), default='image/jpeg')
     price        = db.Column(db.Float, default=0.0)
+    order        = db.Column(db.Integer, default=0)
     is_published = db.Column(db.Boolean, default=False)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
