@@ -748,10 +748,15 @@ def admin_reorder_sections():
 @admin_required
 def admin_delete_course(course_id):
     course = Course.query.get_or_404(course_id)
+    # Delete LessonProgress first to avoid FK constraint errors
+    for section in course.sections:
+        for lesson in section.lessons:
+            LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+    db.session.flush()
     db.session.delete(course)
     db.session.commit()
-    flash('Curso eliminado.', 'success')
-    return redirect(url_for('admin_courses'))
+    flash('Formación eliminada.', 'success')
+    return redirect(url_for('courses'))
 
 @app.route('/admin/seccion/<int:section_id>/leccion', methods=['POST'])
 @login_required
