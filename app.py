@@ -1864,13 +1864,24 @@ def seed_bono_habitos():
             '9. Energia sexual.',
             '10. Super habitos y cierre.', '10. Super hábitos y cierre.',
         ]
+        # Collect all sections to remove (by name or by order 0-9)
+        secs_to_remove = []
         for name in old_names:
             sec = Section.query.filter_by(course_id=course.id, title=name).first()
-            if sec:
-                db.session.delete(sec)
-        # Also delete anything at orders 0-9 that may have slipped through
+            if sec and sec not in secs_to_remove:
+                secs_to_remove.append(sec)
         for sec in Section.query.filter_by(course_id=course.id).filter(
                 Section.order >= 0, Section.order <= 9).all():
+            if sec not in secs_to_remove:
+                secs_to_remove.append(sec)
+
+        # Delete LessonProgress first to avoid FK constraint errors
+        for sec in secs_to_remove:
+            for lesson in sec.lessons:
+                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+        db.session.flush()
+
+        for sec in secs_to_remove:
             db.session.delete(sec)
         db.session.flush()
 
@@ -2000,12 +2011,21 @@ def admin_fix_fase5_habitos():
             flash('No se encontro el curso FASE 5 MENTALIDAD', 'error')
             return redirect(url_for('admin_dashboard'))
 
-        # Delete ALL existing sections for this course with order 0-9
-        # (the 10 bono sub-sections) and any previous consolidation attempt
-        secs = Section.query.filter_by(course_id=course.id).all()
-        for sec in secs:
-            if sec.order <= 9 or 'Habitos' in sec.title or 'abitos' in sec.title:
-                db.session.delete(sec)
+        # Identify sections to remove (orders 0-9 or any Habitos variant)
+        secs_to_remove = [
+            sec for sec in Section.query.filter_by(course_id=course.id).all()
+            if sec.order <= 9 or 'Habitos' in sec.title or 'abitos' in sec.title
+        ]
+
+        # Delete LessonProgress for every lesson in those sections first
+        for sec in secs_to_remove:
+            for lesson in sec.lessons:
+                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+        db.session.flush()
+
+        # Now safe to delete the sections (cascade removes lessons/files)
+        for sec in secs_to_remove:
+            db.session.delete(sec)
         db.session.flush()
 
         # Reorder remaining sections compactly starting at 2
