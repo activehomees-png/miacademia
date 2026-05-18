@@ -2102,17 +2102,30 @@ _CAPCUT_LESSONS = [
 
 def seed_programas_marca():
     try:
-        if Course.query.filter_by(title='Programas para tu marca').first():
-            return
-        course = Course(
-            title='Programas para tu marca',
-            subtitle='Herramientas y programas para potenciar tu marca personal',
-            description='Formaciones sobre herramientas clave para crear y hacer crecer tu marca personal.',
-            is_published=True,
-            price=0.0,
-        )
-        db.session.add(course)
-        db.session.flush()
+        course = Course.query.filter_by(title='Programas para tu marca').first()
+
+        if not course:
+            # Create fresh
+            course = Course(
+                title='Programas para tu marca',
+                subtitle='Herramientas y programas para potenciar tu marca personal',
+                description='Formaciones sobre herramientas clave para crear y hacer crecer tu marca personal.',
+                is_published=True,
+                price=0.0,
+            )
+            db.session.add(course)
+            db.session.flush()
+        else:
+            # Already exists — check if structure is correct (should have exactly 1 section named '1. Capcut')
+            sections = Section.query.filter_by(course_id=course.id).all()
+            if len(sections) == 1 and sections[0].title == '1. Capcut':
+                return  # already in correct shape
+            # Fix: wipe old sections and rebuild
+            for sec in sections:
+                for lesson in sec.lessons:
+                    LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+                db.session.delete(sec)
+            db.session.flush()
 
         sec = Section(course_id=course.id, title='1. Capcut', order=0)
         db.session.add(sec)
