@@ -1746,6 +1746,96 @@ LESSON_DESCRIPTIONS = {
 }
 
 
+def seed_fase5():
+    """Create the FASE 5 MENTALIDAD course with all sections and lessons if it doesn't exist."""
+    try:
+        if Course.query.filter_by(title='FASE 5 MENTALIDAD').first():
+            return
+
+        course = Course(
+            title='FASE 5 MENTALIDAD',
+            subtitle='Todo el desarrollo personal que necesitas para ser autentico y volverte magnético y viral.',
+            is_published=True,
+            price=0.0,
+            image='https://assets.skool.com/f/fbc26fa852864d56b36a10f8d8f3a4a1/c8e27db218c843f5af0e2b02f6daba519f0cdd8d0a1e4ceb990888649241cae6.jpg',
+        )
+        db.session.add(course)
+        db.session.flush()
+
+        _sections = [
+            ('1 Hábitos para la paz mental', 0, [
+                ('1.1 Introduccion',                        'https://vimeo.com/749878520'),
+                ('1.2 Como realizar este curso',            'https://vimeo.com/749881629/e2cbd4caf7'),
+                ('1.3 ¿Porque cuesta tanto cambiar?',      None),
+                ('2.1 El presente',                        None),
+                ('2.1.1 Profundizando en la meditacion',   None),
+                ('2.2 Pensar menos, sentir mas',           None),
+                ('2.3 Decido vivir este momento.',         None),
+                ('2.3.1 Sanar el pasado',                  None),
+                ('3.1 La Aceptacion',                      None),
+                ('4.1 Como se forma el ego',               None),
+                ('4.1.2 ¿Para que?',                       None),
+                ('4.1.1 Creencias',                        None),
+                ('4.2 Niño Interior',                      None),
+                ('5.1 La ilusion de uno mismo',            None),
+                ('5.2 Recogida de proyecciones',           None),
+                ('5.1.1 Reprogramar la mente',             None),
+                ('6.1 Habitos',                            None),
+                ('7.1 Mindfull eating.',                   None),
+                ('7.2.1 Alimentacion consciente',          None),
+                ('7.2.2 Alimentacion consciente',          None),
+                ('8.1 Iniciacion a la respiracion',        None),
+                ('8.2 Respiracion consciente',             None),
+                ('9.1 Energia sexual',                     None),
+                ('9.2 Sexualidad consciente',              None),
+                ('10. Super habitos',                      None),
+                ('11. Cierre de curso + regalo',           'https://vimeo.com/749914145/8f0ad0592b'),
+            ]),
+            ('2. Encuentra tu proposito', 1, [
+                ('1. ¿A que me dedico?',                   'https://vimeo.com/733891828/9bc0bc2936'),
+                ('2. Hoy vas a encontrar tu propósito.',   'https://vimeo.com/738144908/10eafd0ae1'),
+                ('3. Tu don y tu talento.',                'https://vimeo.com/738152347/ea9a721a10'),
+                ('4. El camino al propósito.',             'https://vimeo.com/733930732/8b5e4907c4'),
+                ('5. El ego.',                             'https://vimeo.com/734454135/6eceed3077'),
+                ('6. Monetiza tu pasión.',                 'https://vimeo.com/738158599/0f607a9a0d'),
+            ]),
+            ('5 REPROGRAMACIÓN MENTAL NIÑO INTERIOR', 2, [
+                ('1. El Ambiente donde te programaste.',   'https://vimeo.com/1133998226'),
+                ('2. La emoción que viviste de niño.',     'https://vimeo.com/1136253801'),
+                ('3. Como se forja el personaje',          'https://vimeo.com/1138661240'),
+                ('4. Desprogramando la mente',             'https://vimeo.com/1140914534'),
+                ('5. Encuentro con el niño.',              'https://vimeo.com/1143207136'),
+                ('6. Recogida de proyecciones.',           'https://vimeo.com/1145401240'),
+                ('7. El personaje',                        'https://vimeo.com/1147459657'),
+                ('8. El sistema del personaje.',           'https://vimeo.com/1152337303'),
+                ('9. Final niño interior.',                'https://vimeo.com/1154444356'),
+            ]),
+            ('6 PROGRAMA TU MENTE PARA LA ABUNDANCIA', 3, [
+                ('6.1 Atraer Abundancia y Dinero Cambiando tu Mente', 'https://youtu.be/l27PoZo_rpQ'),
+                ('6.2 Tu vieja identidad sobre el dinero.',           'https://youtu.be/nG9F_gKpTTM'),
+                ('6.3 El Dinero Está En La Relación Con Tu Padre',    'https://youtu.be/7samMzQPuzo'),
+            ]),
+        ]
+
+        for sec_title, sec_order, lessons in _sections:
+            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url) in enumerate(lessons):
+                db.session.add(Lesson(
+                    section_id=sec.id,
+                    title=l_title,
+                    video_url=l_url or '',
+                    order=l_order,
+                ))
+
+        db.session.commit()
+        print('[seed_fase5] FASE 5 MENTALIDAD course created with all sections and lessons.')
+    except Exception as e:
+        print(f'[seed_fase5] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/update-descriptions', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -1903,6 +1993,8 @@ with app.app_context():
     except Exception as e:
         print(f'[seed_desc] ERROR en seed_descriptions: {e}')
         db.session.rollback()
+
+    seed_fase5()
 
     # Backfill points for existing lesson completions and comments
     try:
