@@ -316,10 +316,24 @@ def community():
     admins        = User.query.filter_by(role='admin').limit(5).all()
     online_users  = User.query.filter(User.last_seen >= five_min_ago).order_by(User.last_seen.desc()).limit(20).all()
     top_month     = get_leaderboard(since=month_start)[:5]
+    now = datetime.utcnow()
+    # Clase en directo ahora mismo (empezó hace menos de duration_min)
+    from sqlalchemy import and_
+    live_now = (LiveClass.query
+                .filter(LiveClass.scheduled_at <= now)
+                .all())
+    live_now = next((lc for lc in live_now
+                     if (now - lc.scheduled_at).total_seconds() / 60 < lc.duration_min), None)
+    # Próxima clase
+    next_class = (LiveClass.query
+                  .filter(LiveClass.scheduled_at > now)
+                  .order_by(LiveClass.scheduled_at.asc())
+                  .first())
     return render_template('community/feed.html',
                            posts=posts, categories=categories, active_cat=cat_id,
                            member_count=member_count, admin_count=admin_count,
-                           admins=admins, online_users=online_users, top_month=top_month)
+                           admins=admins, online_users=online_users, top_month=top_month,
+                           live_now=live_now, next_class=next_class)
 
 @app.route('/comunidad/nuevo', methods=['GET', 'POST'])
 @login_required

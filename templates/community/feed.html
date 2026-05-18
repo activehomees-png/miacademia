@@ -7,6 +7,39 @@
 
   <!-- FEED -->
   <div class="flex-1 min-w-0">
+
+    <!-- Franja clase en directo / próxima clase -->
+    {% if live_now %}
+    <a href="{{ live_now.meet_url or '#' }}" target="_blank"
+       class="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 transition hover:opacity-90"
+       style="background:linear-gradient(90deg,#dc2626,#b91c1c);color:#fff;text-decoration:none">
+      <span class="flex items-center gap-1.5 font-bold text-sm">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+        </span>
+        EN DIRECTO
+      </span>
+      <span class="text-sm font-semibold">{{ live_now.title }}</span>
+      {% if live_now.meet_url %}
+      <span class="ml-auto text-xs font-bold bg-white/20 px-3 py-1 rounded-lg">🎥 Unirse →</span>
+      {% endif %}
+    </a>
+    {% elif next_class %}
+    <a href="{{ url_for('calendar') }}"
+       class="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 transition hover:opacity-90"
+       style="background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;text-decoration:none">
+      <span class="text-sm">📅</span>
+      <div class="flex-1 min-w-0">
+        <span class="text-sm font-semibold">{{ next_class.title }}</span>
+        <span class="text-xs opacity-80 ml-2">
+          {{ next_class.scheduled_at.strftime('%d %b · %H:%M') }}
+        </span>
+      </div>
+      <span class="text-xs font-bold bg-white/20 px-3 py-1 rounded-lg flex-shrink-0">Ver →</span>
+    </a>
+    {% endif %}
+
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-lg font-bold text-[#18181b]">Comunidad</h1>
       <a href="{{ url_for('new_post') }}" class="btn btn-primary">✏️ Publicar</a>
