@@ -1650,6 +1650,10 @@ def seed_db():
                 ('6.1 Atraer Abundancia y Dinero Cambiando tu Mente', 'https://youtu.be/l27PoZo_rpQ', 54, ''),
                 ('6.2 Tu vieja identidad sobre el dinero.',           'https://youtu.be/nG9F_gKpTTM', 31, ''),
                 ('6.3 El Dinero Está En La Relación Con Tu Padre',    'https://youtu.be/7samMzQPuzo', 18, ''),
+                ('¿Qué es el dinero?',                                'https://youtu.be/jBd3M20EQic', 11, ''),
+                ('¿Cómo ahorrar?',                                    'https://youtu.be/gN2Z6gVwsYA', 13, ''),
+                ('Gestiona tus finanzas personales.',                 'https://youtu.be/BbSj95aKAW4', 11, ''),
+                ('¿En que invertir?',                                 'https://youtu.be/L-yGqUTphN0', 16, ''),
             ]),
         ]
 
@@ -1662,6 +1666,38 @@ def seed_db():
                     video_url=l_url, duration_min=l_dur, description=l_desc, order=l_order))
         db.session.commit()
         print('[seed] FASE 5 course created with all sections and lessons.')
+
+
+def fix_fase5_carpeta6():
+    """Add the 4 Finanzas Personales lessons to carpeta 6 of FASE 5 if missing."""
+    try:
+        course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
+        if not course:
+            return
+        sec = Section.query.filter_by(course_id=course.id, title='6 PROGRAMA TU MENTE PARA LA ABUNDANCIA').first()
+        if not sec:
+            return
+        existing_titles = {l.title for l in sec.lessons}
+        new_lessons = [
+            ('¿Qué es el dinero?',                'https://youtu.be/jBd3M20EQic', 11),
+            ('¿Cómo ahorrar?',                    'https://youtu.be/gN2Z6gVwsYA', 13),
+            ('Gestiona tus finanzas personales.', 'https://youtu.be/BbSj95aKAW4', 11),
+            ('¿En que invertir?',                 'https://youtu.be/L-yGqUTphN0', 16),
+        ]
+        max_order = max((l.order for l in sec.lessons), default=0)
+        added = 0
+        for title, url, dur in new_lessons:
+            if title not in existing_titles:
+                max_order += 1
+                db.session.add(Lesson(section_id=sec.id, title=title,
+                                      video_url=url, duration_min=dur, order=max_order))
+                added += 1
+        if added:
+            db.session.commit()
+            print(f'[fix_fase5_carpeta6] Añadidas {added} lecciones de finanzas a carpeta 6.')
+    except Exception as e:
+        print(f'[fix_fase5_carpeta6] ERROR: {e}')
+        db.session.rollback()
 
 
 def seed_descriptions():
@@ -2724,6 +2760,7 @@ with app.app_context():
         print(f'[migration] group_label: {_e}')
 
     seed_fase5()
+    fix_fase5_carpeta6()
     seed_bono_habitos()
     seed_bono_organizacion()
     seed_liberacion_emocional()
