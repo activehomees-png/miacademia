@@ -419,8 +419,18 @@ def pin_post(post_id):
 def courses():
     all_courses  = Course.query.filter_by(is_published=True).order_by(Course.order.asc(), Course.created_at.asc()).all()
     enrolled_ids = {e.course_id for e in current_user.enrollments}
+    # Progreso por curso
+    completed_ids = {lp.lesson_id for lp in LessonProgress.query.filter_by(user_id=current_user.id).all()}
+    progress = {}
+    for c in all_courses:
+        total = c.lesson_count
+        if total == 0:
+            progress[c.id] = 0
+        else:
+            done = sum(1 for s in c.sections for l in s.lessons if l.id in completed_ids)
+            progress[c.id] = round(done * 100 / total)
     return render_template('courses/catalog.html',
-                           courses=all_courses, enrolled_ids=enrolled_ids)
+                           courses=all_courses, enrolled_ids=enrolled_ids, progress=progress)
 
 @app.route('/cursos/<int:course_id>')
 @login_required
