@@ -1999,6 +1999,127 @@ def seed_bono_organizacion():
         db.session.rollback()
 
 
+def seed_liberacion_emocional():
+    """Insert '4. Liberacion emocional' into FASE 5 with 18 lessons."""
+    try:
+        course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
+        if not course:
+            return
+        if Section.query.filter_by(course_id=course.id,
+                                   title='4. Liberacion emocional').first():
+            return
+        # Shift sections with order >= 13 up by 1 to make room at order 13
+        for sec in Section.query.filter_by(course_id=course.id).filter(
+                Section.order >= 13).all():
+            sec.order += 1
+        db.session.flush()
+
+        sec = Section(course_id=course.id, title='4. Liberacion emocional', order=13)
+        db.session.add(sec)
+        db.session.flush()
+
+        _lessons = [
+            ('Bienvenidos',   'https://vimeo.com/719536396'),
+            ('Capitulo 1',    'https://vimeo.com/719536479'),
+            ('Capitulo 2',    'https://vimeo.com/719536500'),
+            ('Capitulo 3',    'https://vimeo.com/719536514'),
+            ('Capitulo 4',    'https://vimeo.com/719536558'),
+            ('Capitulo 5',    'https://vimeo.com/721359695'),
+            ('Capitulo 6',    'https://vimeo.com/719536688'),
+            ('Capitulo 7',    'https://vimeo.com/719536704'),
+            ('Capitulo 8',    'https://vimeo.com/719536728'),
+            ('Capitulo 9',    'https://vimeo.com/720549604'),
+            ('Capitulo 10',   'https://vimeo.com/720555536'),
+            ('Capitulo 11',   'https://vimeo.com/720564299'),
+            ('Capitulo 12',   'https://vimeo.com/720564393'),
+            ('Capitulo 13',   'https://vimeo.com/720564485'),
+            ('Capitulo 14',   'https://vimeo.com/721350229'),
+            ('Capitulo 15',   'https://vimeo.com/721350331'),
+            ('Capitulo 16',   'https://vimeo.com/721350382'),
+            ('Capitulo 17',   'https://vimeo.com/803924439'),
+        ]
+        for l_order, (l_title, l_url) in enumerate(_lessons):
+            db.session.add(Lesson(
+                section_id=sec.id,
+                title=l_title,
+                video_url=l_url,
+                order=l_order,
+            ))
+
+        db.session.commit()
+        print('[seed_liberacion_emocional] Seccion "4. Liberacion emocional" creada con 18 lecciones.')
+    except Exception as e:
+        print(f'[seed_liberacion_emocional] ERROR: {e}')
+        db.session.rollback()
+
+
+@app.route('/admin/fix-liberacion-emocional')
+@login_required
+@admin_required
+def admin_fix_liberacion_emocional():
+    """Force-insert '4. Liberacion emocional' into FASE 5, idempotent."""
+    try:
+        course = Course.query.filter_by(title='FASE 5 MENTALIDAD').first()
+        if not course:
+            flash('No se encontro el curso FASE 5 MENTALIDAD', 'error')
+            return redirect(url_for('admin_dashboard'))
+
+        # Remove any previous attempt
+        existing = Section.query.filter_by(course_id=course.id,
+                                           title='4. Liberacion emocional').first()
+        if existing:
+            for lesson in existing.lessons:
+                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+            db.session.delete(existing)
+            db.session.flush()
+
+        # Shift sections with order >= 13 up by 1
+        for sec in Section.query.filter_by(course_id=course.id).filter(
+                Section.order >= 13).all():
+            sec.order += 1
+        db.session.flush()
+
+        new_sec = Section(course_id=course.id,
+                          title='4. Liberacion emocional', order=13)
+        db.session.add(new_sec)
+        db.session.flush()
+
+        _lessons = [
+            ('Bienvenidos',   'https://vimeo.com/719536396'),
+            ('Capitulo 1',    'https://vimeo.com/719536479'),
+            ('Capitulo 2',    'https://vimeo.com/719536500'),
+            ('Capitulo 3',    'https://vimeo.com/719536514'),
+            ('Capitulo 4',    'https://vimeo.com/719536558'),
+            ('Capitulo 5',    'https://vimeo.com/721359695'),
+            ('Capitulo 6',    'https://vimeo.com/719536688'),
+            ('Capitulo 7',    'https://vimeo.com/719536704'),
+            ('Capitulo 8',    'https://vimeo.com/719536728'),
+            ('Capitulo 9',    'https://vimeo.com/720549604'),
+            ('Capitulo 10',   'https://vimeo.com/720555536'),
+            ('Capitulo 11',   'https://vimeo.com/720564299'),
+            ('Capitulo 12',   'https://vimeo.com/720564393'),
+            ('Capitulo 13',   'https://vimeo.com/720564485'),
+            ('Capitulo 14',   'https://vimeo.com/721350229'),
+            ('Capitulo 15',   'https://vimeo.com/721350331'),
+            ('Capitulo 16',   'https://vimeo.com/721350382'),
+            ('Capitulo 17',   'https://vimeo.com/803924439'),
+        ]
+        for l_order, (l_title, l_url) in enumerate(_lessons):
+            db.session.add(Lesson(
+                section_id=new_sec.id,
+                title=l_title,
+                video_url=l_url,
+                order=l_order,
+            ))
+
+        db.session.commit()
+        flash('Seccion "4. Liberacion emocional" creada con 18 lecciones.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {e}', 'error')
+    return redirect(url_for('admin_dashboard'))
+
+
 @app.route('/admin/fix-fase5-habitos')
 @login_required
 @admin_required
@@ -2244,6 +2365,7 @@ with app.app_context():
     seed_fase5()
     seed_bono_habitos()
     seed_bono_organizacion()
+    seed_liberacion_emocional()
 
     # Backfill points for existing lesson completions and comments
     try:
