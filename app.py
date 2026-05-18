@@ -2489,6 +2489,25 @@ def seed_ia():
         db.session.rollback()
 
 
+def seed_coach_profesional():
+    try:
+        if Course.query.filter_by(title='Hazte Coach profesional').first():
+            return
+        course = Course(
+            title='Hazte Coach profesional',
+            subtitle='',
+            description='',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(course)
+        db.session.commit()
+        print('[seed_coach_profesional] Curso "Hazte Coach profesional" creado.')
+    except Exception as e:
+        print(f'[seed_coach_profesional] ERROR: {e}')
+        db.session.rollback()
+
+
 def seed_clases_2025():
     try:
         if Course.query.filter_by(title='Clases 2025').first():
@@ -3126,6 +3145,7 @@ with app.app_context():
     seed_clases_2026()
     seed_ia()
     seed_clases_2025()
+    seed_coach_profesional()
 
     # Backfill points for existing lesson completions and comments
     try:
