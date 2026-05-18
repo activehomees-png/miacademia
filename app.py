@@ -1373,6 +1373,14 @@ def seed_db():
             samuel.status = 'active'
     db.session.commit()
 
+    # Alumno de prueba — solo crea si no existe
+    if not User.query.filter_by(email='alumno@prueba.com').first():
+        test = User(username='alumno_prueba', email='alumno@prueba.com',
+                    role='student', status='active')
+        test.set_password('Prueba1234!')
+        db.session.add(test)
+        db.session.commit()
+
     # Categorías por defecto — solo si no hay ninguna
     if not Category.query.first():
         for name, color, emoji in [
