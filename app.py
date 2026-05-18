@@ -2292,6 +2292,77 @@ def seed_clases_2026():
         db.session.rollback()
 
 
+def seed_ia():
+    try:
+        if Course.query.filter_by(title='IA').first():
+            return
+        course = Course(
+            title='IA',
+            subtitle='Crea contenido con Inteligencia Artificial y crece en redes sociales',
+            description='Aprende a crear contenido faceless con IA: guiones, voz, edición y miniaturas para monetizar tu canal.',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(course)
+        db.session.flush()
+
+        sections_data = [
+            ('FASE 1 CREAMOS TU CANAL', 0, [
+                ('Bienvenida.',                                  'https://vimeo.com/905900462'),
+                ('La mentalidad necesaria para este negocio.',   'https://vimeo.com/905900938'),
+                ('¿Qué son los canales automatizados?',          'https://vimeo.com/905903531'),
+                ('Como consumir este curso.',                     'https://vimeo.com/905905036'),
+                ('Ayúdame.',                                     'https://vimeo.com/905906678'),
+                ('2.1 Encuentra tu nicho.',                      'https://vimeo.com/905912313'),
+                ('2.1.1 Escoge un nicho en tendencias.',         'https://vimeo.com/1022413674'),
+                ('2.2 Abrir tu canal de YouTube.',               'https://vimeo.com/905919839'),
+                ('2.3 Personalización del Canal + VidIQ.',       'https://vimeo.com/1022429684'),
+                ('2.1.2 Algunos nichos interesantes.',           'https://vimeo.com/1025159053'),
+                ('3.0 Analizando a tu audiencia.',               'https://vimeo.com/997656483'),
+                ('3.1 Crear un guion con Chat GPT.',             'https://vimeo.com/913400871'),
+                ('3.2 Ideas para crear tu guion.',               'https://vimeo.com/914177000'),
+                ('GPTs Para crear tus guiones mas realistas.',   'https://vimeo.com/1011825608'),
+                ('4.3 Pasar de texto a voz (Eleven Labs)',       'https://vimeo.com/918913820'),
+                ('5.1 Edición con CapCut.',                      'https://vimeo.com/921756345'),
+                ('5.2 Edición con CapCut Y exportado.',          'https://vimeo.com/925753040'),
+                ('6.0 Entrar en Discord para acceder a Midjourney', 'https://vimeo.com/1000681997'),
+                ('6.1 Creación de miniaturas con Midjourney.',   'https://vimeo.com/1024298757'),
+                ('6.2 Crear miniatura con Canva',                'https://vimeo.com/948289425'),
+                ('6.3 Crear miniatura con Leonardo AI',          'https://vimeo.com/1023726321'),
+                ('6.4 Crear miniatura con Photoshop.',           'https://vimeo.com/956991589'),
+                ('6.5 Mejorando miniaturas',                     'https://vimeo.com/967114138'),
+                ('7.1 Resumen de todo lo que hemos visto.',      'https://vimeo.com/1018457003'),
+                ('¿Cómo descargar videos de artgrid?',           'https://vimeo.com/948304344'),
+            ]),
+            ('FASE 2 PROGRAMAS PARA TU MARCA', 1, [
+                ('1.1 Programa Animaciones dibujo Mano (VideoScribe)', 'https://vimeo.com/935925338'),
+                ('1.2 Crear un avatar con IA (D-ID)',                  'https://vimeo.com/941271568'),
+                ('1.3 Crear un avatar de ti (HeyGen)',                 'https://vimeo.com/1013616444'),
+                ('2.1 Animación de fotos (Pikalabs)',                  'https://vimeo.com/937626127'),
+                ('2.2 De texto a vídeo FLIKI',                         'https://vimeo.com/1022661291'),
+                ('3.1 Leonardo AI (programa para hacer miniaturas)',    'https://vimeo.com/1023726321'),
+            ]),
+        ]
+
+        for sec_title, sec_order, lessons in sections_data:
+            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url) in enumerate(lessons):
+                db.session.add(Lesson(
+                    section_id=sec.id,
+                    title=l_title,
+                    video_url=l_url,
+                    order=l_order,
+                ))
+
+        db.session.commit()
+        print('[seed_ia] Curso "IA" creado con 2 fases y 31 lecciones.')
+    except Exception as e:
+        print(f'[seed_ia] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/fix-programas-marca')
 @login_required
 @admin_required
@@ -2658,6 +2729,7 @@ with app.app_context():
     seed_liberacion_emocional()
     seed_programas_marca()
     seed_clases_2026()
+    seed_ia()
 
     # Backfill points for existing lesson completions and comments
     try:
