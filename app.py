@@ -2127,8 +2127,33 @@ _CAPCUT_LESSONS = [
     ('6.1 Conclusion',                                'https://vimeo.com/1031723091', '6. Conclusion'),
 ]
 
+_WEB_LESSONS = [
+    ('0. Bienvenidos',                              'https://vimeo.com/953217254'),
+    ('1. Eligiendo y contratando nuestro hosting',  'https://vimeo.com/953194088'),
+    ('2. Configuración e instalación de Wordpress', 'https://vimeo.com/953194175'),
+    ('3. Panel de control de Wordpress',            'https://vimeo.com/953194195'),
+    ('4. Iniciando sesión y editor nativo de Wordpress', 'https://vimeo.com/953194296'),
+    ('5. Instalando elementor',                     'https://vimeo.com/953194327'),
+    ('6. Jugando con Wordpress y Elementor',        'https://vimeo.com/953194382'),
+    ('7. Editor de Elementor al completo',          'https://vimeo.com/953194406'),
+    ('8. Vinculando nuestra cuenta de elementor',   'https://vimeo.com/953194499'),
+    ('9. Descubriendo las plantillas de elementor', 'https://vimeo.com/953193184'),
+    ('10. Mejores temas para Elementor',            'https://vimeo.com/953193668'),
+    ('11. Instalando e importando nuestro primer tema', 'https://vimeo.com/953193585'),
+    ('12. Opciones globales de configuración',      'https://vimeo.com/953193771'),
+    ('13. Personalizando nuestro Header + LOGO',    'https://vimeo.com/953193299'),
+    ('14. Elementos de nuestro sitio web: Títulos', 'https://vimeo.com/953193834'),
+    ('15. Botones, enlaces y rutas',                'https://vimeo.com/953193412'),
+    ('16. Columnas y secciones',                    'https://vimeo.com/953193456'),
+    ('17. Sección de vídeo y enlaces',              'https://vimeo.com/953193909'),
+    ('18. Carrousel de imágenes',                   'https://vimeo.com/953194006'),
+    ('19. Cómo hacer y restaurar copias de seguridad', 'https://vimeo.com/953194053'),
+    ('20. Plugins avanzados de seguridad',          'https://vimeo.com/953193531'),
+]
+
+
 def _build_programas_sections(course):
-    """Helper: create/ensure '1. Capcut' and '2. Premiere' sections."""
+    """Helper: create/ensure '1. Capcut', '2. Premiere' and '3. Crea tu web' sections."""
     existing_titles = {s.title for s in course.sections}
 
     if '1. Capcut' not in existing_titles:
@@ -2145,6 +2170,14 @@ def _build_programas_sections(course):
         db.session.flush()
         for l_order, (l_title, l_url) in enumerate(_PREMIERE_LESSONS):
             db.session.add(Lesson(section_id=sec2.id, title=l_title,
+                                  video_url=l_url, order=l_order))
+
+    if '3. Crea tu web' not in existing_titles:
+        sec3 = Section(course_id=course.id, title='3. Crea tu web', order=2)
+        db.session.add(sec3)
+        db.session.flush()
+        for l_order, (l_title, l_url) in enumerate(_WEB_LESSONS):
+            db.session.add(Lesson(section_id=sec3.id, title=l_title,
                                   video_url=l_url, order=l_order))
 
 
@@ -2168,7 +2201,12 @@ def seed_programas_marca():
             titles = {s.title for s in sections}
 
             # If old multi-section capcut structure exists, wipe and rebuild
-            if titles not in ({'1. Capcut'}, {'1. Capcut', '2. Premiere'}):
+            valid = (
+                {'1. Capcut'},
+                {'1. Capcut', '2. Premiere'},
+                {'1. Capcut', '2. Premiere', '3. Crea tu web'},
+            )
+            if titles not in valid:
                 for sec in sections:
                     for lesson in sec.lessons:
                         LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
@@ -2178,7 +2216,7 @@ def seed_programas_marca():
             _build_programas_sections(course)
 
         db.session.commit()
-        print('[seed_programas_marca] "Programas para tu marca" actualizado: Capcut + Premiere.')
+        print('[seed_programas_marca] "Programas para tu marca" actualizado: Capcut + Premiere + Crea tu web.')
     except Exception as e:
         print(f'[seed_programas_marca] ERROR: {e}')
         db.session.rollback()
