@@ -2417,6 +2417,260 @@ def seed_ia():
         db.session.rollback()
 
 
+def seed_clases_2025():
+    try:
+        if Course.query.filter_by(title='Clases 2025').first():
+            return
+        course = Course(
+            title='Clases 2025',
+            subtitle='Todas las clases en directo grabadas 2024-2025',
+            description='Accede a todas las grabaciones de las clases en directo realizadas desde abril 2024 hasta enero 2026.',
+            is_published=True,
+            price=0.0,
+        )
+        db.session.add(course)
+        db.session.flush()
+
+        sections_data = [
+            ('Enero 2026', 0, [
+                ('15-1-2026 Como hacer ofertas',                      'https://vimeo.com/1154799599'),
+                ('🔴 Final formación niño interior',                   'https://vimeo.com/1154444356'),
+                ('11-1-2026 ¿Qué publicar en RRSS?',                  'https://vimeo.com/1153399221'),
+                ('17-01-2026 - Como hacer sus primeros 1.000 mil EUR', 'https://vimeo.com/1155578698'),
+                ('🔴 8-1-2025 El sistema del personaje.',              'https://vimeo.com/1152337303'),
+                ('ENERO: METODO 30X FOCUS - BRYAN TRACY',              'https://vimeo.com/1151250794'),
+                ('4-1-2026 Estrategia de contenido',                   'https://vimeo.com/1151511851'),
+            ]),
+            ('Diciembre 2025', 1, [
+                ('28-12-2025 Final de año',                   'https://vimeo.com/1149927847'),
+                ('🔴18-12-2025',                              'https://vimeo.com/1147459657'),
+                ('16-12-2025',                                'https://vimeo.com/1147107355'),
+                ('🔴10-12-2025 Recogida de proyecciones',     'https://vimeo.com/1145401240'),
+                ('9-12-2025',                                 'https://vimeo.com/1145021487'),
+                ('🔴 3-12-2025 Encuentro con el niño',        'https://vimeo.com/1143207136'),
+            ]),
+            ('Noviembre 2025', 2, [
+                ('🔴 26-11-2025 Niño interior 4',                            'https://vimeo.com/1140914534'),
+                ('29-11-2025 Espionaje de competencia + retención',          'https://vimeo.com/1141695080'),
+                ('25-11-2015 Validar tu producto',                           'https://vimeo.com/1140554628'),
+                ('🔴 19-11-2025 niño interior 3',                            'https://vimeo.com/1138661240'),
+                ('19-11-2025 Estrategia general en redes para vender',       'https://vimeo.com/1138410011'),
+                ('23-11-2025 Revisión de perfiles + ideas',                  'https://vimeo.com/1139893456'),
+                ('16-11-2025 Estrategia entre redes',                        'https://vimeo.com/1137475177'),
+                ('15-11-2025 Practica de rolplay + ventas',                  'https://vimeo.com/1137412964'),
+                ('🔴 14-11-2025 Niño interior 2',                            'https://vimeo.com/1136253801'),
+                ('11-11-2025 Retención en YouTube',                          'https://vimeo.com/1135873618'),
+                ('9-11-2025 Historias de Instagram.',                        'https://vimeo.com/1135117297'),
+                ('2-11-2025 Conversaciones en instagram',                    'https://vimeo.com/1132961723'),
+                ('1-11-2025',                                                'https://vimeo.com/1132816708'),
+            ]),
+            ('Octubre 2025', 3, [
+                ('21-10-2025',                                         'https://vimeo.com/1129305180'),
+                ('5-10-2024 hook visuales.',                           'https://vimeo.com/1124648577'),
+                ('29-10-2025 Oratoria consciente para redes sociales', 'https://vimeo.com/1131618392'),
+            ]),
+            ('Septiembre 2025', 4, [
+                ('30-9-2025',                                      'https://vimeo.com/1123326774'),
+                ('21-9-2025',                                      'https://vimeo.com/1120633252'),
+                ('16-9-2025',                                      'https://vimeo.com/1119227745'),
+                ('15-9-2025 Pasar de seguidores a clientes',       'https://vimeo.com/1118647697'),
+                ('9-9-2025 Estrategia historias de Instagram.',    'https://vimeo.com/1117220874'),
+                ('7-9-2025 Storytelling',                          'https://vimeo.com/1116592377'),
+                ('2-9-2025 Trucos instagram',                      'https://vimeo.com/1115420774'),
+            ]),
+            ('Agosto 2025', 5, [
+                ('26-8-2025 Análisis Marca Personales Alumnos', 'https://vimeo.com/1113470753'),
+                ('24-8-2025',                                   'https://vimeo.com/1112720380'),
+                ('17-8-2025',                                   'https://vimeo.com/1110751972'),
+                ('5-8-2025',                                    'https://vimeo.com/1107522387'),
+                ('3-8-2025 Generar comunidad en historias.',    'https://vimeo.com/1106916027'),
+            ]),
+            ('Julio 2025', 6, [
+                ('30-7-2025',                                                   'https://vimeo.com/1105703917'),
+                ('20-7-2025',                                                   'https://vimeo.com/1102956963'),
+                ('8-7-2025 Estrategias contenido Youtube e instagram',          'https://vimeo.com/1099773083'),
+                ('3-7-2025 Análisis de alumnos.',                               'https://vimeo.com/1098412325'),
+                ('1-7-2025 Organización y calendarios de contenidos',           'https://vimeo.com/1097964796'),
+            ]),
+            ('Junio 2025', 7, [
+                ('26-6-2025 Mentalidad',        'https://vimeo.com/1097344696'),
+                ('24-6-2025',                   'https://vimeo.com/1096036077'),
+                ('18-6-2025 Colaboraciones',    'https://vimeo.com/1094176751'),
+                ('11-06-2025 Estrategia ganadora', 'https://vimeo.com/1092234172'),
+                ('4-6-2025',                    'https://vimeo.com/1090614061'),
+            ]),
+            ('Mayo 2025', 8, [
+                ('28-5-2025 Estrategia de contenido y producto', 'https://vimeo.com/1088540117'),
+                ('20-5-2025 Análisis avatar con chat GPT',       'https://vimeo.com/1086185888'),
+                ('18-5-2025 Trucos revisando contenido.',        'https://vimeo.com/1085594526'),
+                ('14-5-2025 Trucos en el contenido',             'https://vimeo.com/1084883105'),
+                ('13-5-2025 Trucos para instagram',              'https://vimeo.com/1084013765'),
+                ('11-5-2025 Proposito en tu contenido.',         'https://vimeo.com/1083423939'),
+                ('7-5-2025 Motivación Integrar la Sombra',       'https://vimeo.com/1082314951'),
+                ('6-5-2025 Crear contenido viral',               'https://vimeo.com/1081955919'),
+                ('4-5-2025 Elevar el nivel de consciencia',      'https://vimeo.com/1081313993'),
+            ]),
+            ('Abril 2025', 9, [
+                ('30-4-2025 Contenido',                                    'https://vimeo.com/1080328343'),
+                ('29-4-2025 Titulos',                                      'https://vimeo.com/1080099680'),
+                ('23-4-2025 ¿Cómo hacer para que paren en el feed?',      'https://vimeo.com/1077729888'),
+                ('16-4-2025 VSL en profundidad',                           'https://vimeo.com/1076164098'),
+                ('15-4-2025 Motivación',                                   'https://vimeo.com/1075947951'),
+                ('14-4-2025 VSL estrategia completa',                      'https://vimeo.com/1075124049'),
+                ('9-4-2025 Historias de instagram',                        'https://vimeo.com/1074067588'),
+                ('8-4-2025 Vender por Whastapp',                           'https://vimeo.com/1073686689'),
+                ('6-4-2025',                                               'https://vimeo.com/1073010901'),
+                ('1-4-2025 Automatización con IA TONET',                   'https://vimeo.com/1071552454'),
+            ]),
+            ('Marzo 2025', 10, [
+                ('30-3-2025 IA como asistente',                         'https://vimeo.com/1070842309'),
+                ('26-3-2025 Crecimiento Masivo en redes clase 5',       'https://vimeo.com/1069735468'),
+                ('25-3-2025',                                           'https://vimeo.com/1069528783'),
+                ('23-3-2025',                                           'https://vimeo.com/1068660985'),
+                ('19-3-2025',                                           'https://vimeo.com/1067492688'),
+                ('16-3-2025',                                           'https://vimeo.com/1066381229'),
+                ('15-3-2025',                                           'https://vimeo.com/1066211842'),
+                ('12-3-2025 Constancia',                                'https://vimeo.com/1065246322'),
+                ('11-3-2025 Finanzas personales e inversión',           'https://vimeo.com/1064850100'),
+                ('8-3-2025 Google ADS poner anuncio en google.',        'https://vimeo.com/1063919086'),
+                ('5-3-2025 Encontrar a tu cliente',                     'https://vimeo.com/1062939381'),
+                ('4-3-2025',                                            'https://vimeo.com/1062539139'),
+            ]),
+            ('Febrero 2025', 11, [
+                ('26-2-2025 Avatar 3.0',                            'https://vimeo.com/1060624030'),
+                ('25-2-2025',                                       'https://vimeo.com/1060245758'),
+                ('19-2-2025 Buyer persona',                         'https://vimeo.com/1058485470'),
+                ('17-2-2025 GPT\'s interesantes',                   'https://vimeo.com/1057629154'),
+                ('15-2-2025 Edicion con capcut (Jenny)',             'https://vimeo.com/1057281769'),
+                ('12-2-2025 Crecimiento masivo en RRSS 1',          'https://vimeo.com/1056140137'),
+                ('11-2-2025 Eliminar resistencias',                  'https://vimeo.com/1055722980'),
+                ('10-2-2025 Analisis estrategia Marca Personal',     'https://vimeo.com/1055024291'),
+                ('09-02-2025 Preguntas y Respuestas',                'https://vimeo.com/1054860750'),
+                ('5-2-2025 Copy 8',                                  'https://vimeo.com/1053911839'),
+                ('3-2-2025 Estrategia en Youtube',                   'https://vimeo.com/1052928025'),
+                ('02-02-2025 Crea tu Oceano Azul',                   'https://vimeo.com/1053342320'),
+            ]),
+            ('Enero 2025', 12, [
+                ('29-1-2025 Copywriting 7',                         'https://vimeo.com/1051679678'),
+                ('28-1-2025 Proposito para tu proyecto',            'https://vimeo.com/1051296007'),
+                ('27-1-2025',                                       'https://vimeo.com/1050905159'),
+                ('25-01-2025 Crecimiento Acelerado con Publicidad', 'https://vimeo.com/1050756441'),
+                ('22-1-2025',                                       'https://vimeo.com/1049436953'),
+                ('21-1-2025',                                       'https://vimeo.com/1049068089'),
+                ('18-01-2025 Servicios y Productos',                'https://vimeo.com/1048587484'),
+                ('15-1-2025 Avatar 3.0',                            'https://vimeo.com/1047490228'),
+                ('14-1-2025 Avatar 2.0',                            'https://vimeo.com/1047037016'),
+                ('12-1-2025 Avatar 0.1',                            'https://vimeo.com/1046217798'),
+                ('9-1-2025 Copywriting 6',                          'https://vimeo.com/1045132445'),
+                ('07-01-2025 Elevar el nivel de conciencia',        'https://vimeo.com/1044795402'),
+            ]),
+            ('Diciembre 2024', 13, [
+                ('18-12-2024 Copy 5',                          'https://vimeo.com/1040530020'),
+                ('15-12-2024 Cosas que te hacen viral',        'https://vimeo.com/1039460534'),
+                ('08-12-2024 Crear GPTS',                      'https://vimeo.com/1037256479'),
+                ('07-12-2024 Productividad + PyR',             'https://vimeo.com/1037200624'),
+                ('03-12-2024 Preguntas y respuestas',          'https://vimeo.com/1035748510'),
+                ('30-12-2024 Atraer a tu publico objetivo',    'https://vimeo.com/1043000993'),
+            ]),
+            ('Noviembre 2024', 14, [
+                ('30-11-2024 Videos RolPlay',                   'https://vimeo.com/1034830397'),
+                ('27-11-2024 Copywriter 2',                     'https://vimeo.com/1033995541'),
+                ('26-11-2024',                                  'https://vimeo.com/1033608600'),
+                ('20-11-2024 copy 1',                           'https://vimeo.com/1031685641'),
+                ('17-11-2024 Ia de videos',                     'https://vimeo.com/1030542186'),
+                ('16-11-2024 ChatGPT y PyR',                    'https://vimeo.com/1030377991'),
+                ('15-11-2024 setter 4',                         'https://vimeo.com/1029400098'),
+                ('12-11-2024 Análisis mercado para producto',   'https://vimeo.com/1028991502'),
+                ('10-11-2024 Analizamos Canales de YT',         'https://vimeo.com/1028205920'),
+                ('09-11-2024 Estrategia Mensajes y PyR',        'https://vimeo.com/1028041386'),
+                ('07-11-2024 Análisis Marcas Personales',       'https://vimeo.com/1027438043'),
+                ('06-11-2024 Monetización YouTube',             'https://vimeo.com/1027049700'),
+                ('03-11-2024 Amazon afliliados',                'https://vimeo.com/1025931419'),
+                ('02-11-2024 PyR',                              'https://vimeo.com/1028011101'),
+            ]),
+            ('Octubre 2024', 15, [
+                ('30-10-2024 Setter 4',                                     'https://vimeo.com/1024893241'),
+                ('29-10-2024 Recursos gratis',                              'https://vimeo.com/1024510579'),
+                ('26-10-2024 Estudio de Mercado',                           'https://vimeo.com/1023599192'),
+                ('21-10-2024 Analizando nichos para YT',                    'https://vimeo.com/1021497994'),
+                ('19-10-2024 VSL y PyR',                                    'https://vimeo.com/1021338754'),
+                ('16-10-2024 Setter 3 Análisis de canales y voz',           'https://vimeo.com/1020332240'),
+                ('15-10-2024 Como crear una landing page',                  'https://vimeo.com/1019932102'),
+                ('9-10-2024 Sistema setter || revision canal',              'https://vimeo.com/1018054139'),
+                ('8-10-2024 Aumentar retención y canales de YT',            'https://vimeo.com/1017670354'),
+                ('05-10-2024 Ofertas irresistibles y monetización',         'https://vimeo.com/1016561843'),
+                ('02-10-2024 Setter figura.',                               'https://vimeo.com/1015401719'),
+                ('01-10-2024 P&R',                                          'https://vimeo.com/1015141880'),
+            ]),
+            ('Septiembre 2024', 16, [
+                ('29-9-2024 Inteligencia artificial para contenidos.', 'https://vimeo.com/1014101056'),
+                ('28-09-2024 Base de Marketing pre-escalar',           'https://vimeo.com/1014115958'),
+                ('25-9-2024 Historias destacadas instagram',           'https://vimeo.com/1012910840'),
+                ('25-9-2024 Repasamos canales.',                       'https://vimeo.com/1012674859'),
+                ('20-9-2024 Tendencias RRSS 2025',                    'https://vimeo.com/1011097003'),
+                ('12-9-2024 Empezar a vender en RRSS',                'https://vimeo.com/1008565130'),
+                ('11-9-2024 Reels virales con transición',             'https://vimeo.com/1008183717'),
+                ('5-9-2024 Retener la atención.',                      'https://vimeo.com/1006352665'),
+                ('3-9-2024 Tendencias en redes sociales.',             'https://vimeo.com/1005962046'),
+            ]),
+            ('Agosto 2024', 17, [
+                ('21-8-2024 Entrenar el Carisma',                  'https://vimeo.com/1001342356'),
+                ('20-8-2024 Análisis de Marca Personales.',         'https://vimeo.com/1000895736'),
+                ('14-08-2024 Creando atmosfera para vender.',       'https://vimeo.com/998841537'),
+                ('13-8-2024 Motivacion y estadisticas par aYT',    'https://vimeo.com/998372315'),
+                ('7-8-2024 Edición en capcut',                     'https://vimeo.com/995939545'),
+                ('6-8-2024 Revisión de canales',                   'https://vimeo.com/995524046'),
+            ]),
+            ('Julio 2024', 18, [
+                ('30-7-2024 Crecimiento en YT + Ventas.',                    'https://vimeo.com/992315467'),
+                ('24-7-2024 Vencer las excusas para crear contenido.',       'https://vimeo.com/989754430'),
+                ('23-7-2024 Superar el miedo a crear contenido.',            'https://vimeo.com/989094804'),
+                ('17-7-2024 Resolvemos dudas para e crecimiento RRSS',       'https://vimeo.com/986998405'),
+                ('16-7-2024 MOTIVACION',                                     'https://vimeo.com/985582401'),
+                ('10-7-2024 Retención de la audiencia.',                     'https://vimeo.com/982167628'),
+                ('9-7-2024 P&R',                                             'https://vimeo.com/981553993'),
+                ('3-7-2024 Posicionamiento SEO YT, Instagram, tiktok',      'https://vimeo.com/975647679'),
+                ('2-7-2024 Cambio de estrategia P&R',                        'https://vimeo.com/974426591'),
+            ]),
+            ('Junio 2024', 19, [
+                ('27-6-2024 Vender sin vender.',                            'https://vimeo.com/970090412'),
+                ('25-6-2024 Preguntas y Respuestas.',                       'https://vimeo.com/968222164'),
+                ('19-6-2024 Facebook ADS (Basico)',                         'https://vimeo.com/962585274'),
+                ('18-6-2024 Crecer rápido en Instagram.',                   'https://vimeo.com/961542519'),
+                ('12-6-2024 Estrategia de contenido.',                      'https://vimeo.com/970023795'),
+                ('11-6-2024 Enlazar FB e Insta, como crear comunidad',      'https://vimeo.com/956706697'),
+                ('05-06-2024 Estrategia contenidos + inversiones.',         'https://vimeo.com/958460844'),
+                ('04-06-2024 Ads, motivación y ganar dinero.',              'https://vimeo.com/953680797'),
+            ]),
+            ('Abril 2024', 20, [
+                ('29-05-2024 Perder el miedo a la cámara.',      'https://vimeo.com/951669832'),
+                ('28-05-2024 Análisis canales de YouTube.',      'https://vimeo.com/951248358'),
+                ('22-05-2024 Estrategia de contenidos.',         'https://vimeo.com/949292736'),
+                ('21-05-2024 Preguntas y respuestas.',           'https://vimeo.com/948865310'),
+                ('15-05-2024 Escribir un guion.',                'https://vimeo.com/948059231'),
+                ('14-05-2024 Preguntas y respuestas',            'https://vimeo.com/946584164'),
+            ]),
+        ]
+
+        for sec_title, sec_order, lessons in sections_data:
+            sec = Section(course_id=course.id, title=sec_title, order=sec_order)
+            db.session.add(sec)
+            db.session.flush()
+            for l_order, (l_title, l_url) in enumerate(lessons):
+                db.session.add(Lesson(
+                    section_id=sec.id,
+                    title=l_title,
+                    video_url=l_url,
+                    order=l_order,
+                ))
+
+        db.session.commit()
+        print('[seed_clases_2025] Curso "Clases 2025" creado con 21 secciones.')
+    except Exception as e:
+        print(f'[seed_clases_2025] ERROR: {e}')
+        db.session.rollback()
+
+
 @app.route('/admin/fix-programas-marca')
 @login_required
 @admin_required
@@ -2785,6 +3039,7 @@ with app.app_context():
     seed_programas_marca()
     seed_clases_2026()
     seed_ia()
+    seed_clases_2025()
 
     # Backfill points for existing lesson completions and comments
     try:
