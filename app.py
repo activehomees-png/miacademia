@@ -63,6 +63,7 @@ def timeago(dt: datetime) -> str:
     return f'hace {int(s//86400)} d'
 
 app.jinja_env.filters['timeago'] = timeago
+app.jinja_env.globals['get_level']  = lambda pts: get_level(pts)  # set after get_level is defined
 
 def notify(user_id, type_, message, link=''):
     db.session.add(Notification(user_id=user_id, type=type_, message=message, link=link))
@@ -96,6 +97,51 @@ def award_points(user_id, reason, ref_id, pts):
     if not PointEvent.query.filter_by(user_id=user_id, reason=reason, ref_id=ref_id).first():
         db.session.add(PointEvent(user_id=user_id, points=pts, reason=reason, ref_id=ref_id))
         db.session.commit()
+
+# ── LEVEL SYSTEM ──────────────────────────────────────────────────────────────
+_LEVELS = [
+    # (threshold, name, emoji, color_hex)
+    (0,      'Principiante', '🌱', '#6b7280'),
+    (100,    'Aprendiz',     '⭐', '#d97706'),
+    (300,    'Explorador',   '🔥', '#ea580c'),
+    (700,    'Comprometido', '💪', '#2563eb'),
+    (1500,   'Avanzado',     '🚀', '#7c3aed'),
+    (3000,   'Experto',      '💎', '#0891b2'),
+    (6000,   'Élite',        '👑', '#b45309'),
+    (10000,  'Maestro',      '⚡', '#dc2626'),
+    (18000,  'Leyenda',      '🌟', '#db2777'),
+    (35000,  'Inmortal',     '🏆', '#111827'),
+]
+
+def get_level(pts):
+    """Return dict with level info for a given points total."""
+    current = 0
+    for i, (threshold, name, emoji, color) in enumerate(_LEVELS):
+        if pts >= threshold:
+            current = i
+        else:
+            break
+    level_num   = current + 1
+    _, name, emoji, color = _LEVELS[current]
+    next_thresh = _LEVELS[current + 1][0] if current + 1 < len(_LEVELS) else None
+    prev_thresh = _LEVELS[current][0]
+    if next_thresh is not None:
+        span = next_thresh - prev_thresh
+        progress = min(100, round((pts - prev_thresh) * 100 / span))
+        pts_to_next = next_thresh - pts
+    else:
+        progress    = 100
+        pts_to_next = 0
+    return {
+        'num':        level_num,
+        'name':       name,
+        'emoji':      emoji,
+        'color':      color,
+        'progress':   progress,
+        'pts_to_next': pts_to_next,
+        'next_thresh': next_thresh,
+        'is_max':     next_thresh is None,
+    }
 
 def get_leaderboard(since=None):
     q = PointEvent.query
@@ -575,7 +621,16 @@ def leaderboard():
         since = now.replace(day=1, hour=0, minute=0, second=0)
     ranking = get_leaderboard(since=since)
     my_pts  = sum(e.points for e in PointEvent.query.filter_by(user_id=current_user.id).filter(PointEvent.created_at >= since).all())
-    return render_template('leaderboard.html', ranking=ranking, period=period, my_pts=my_pts)
+    # Total pts (all time) for level calculation
+    my_total_pts = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=current_user.id).scalar() or 0
+    my_level     = get_level(my_total_pts)
+    # Add level info to each ranking entry
+    ranking_with_levels = []
+    for user, pts in ranking:
+        user_total = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=user.id).scalar() or 0
+        ranking_with_levels.append((user, pts, get_level(user_total)))
+    return render_template('leaderboard.html', ranking=ranking_with_levels, period=period,
+                           my_pts=my_pts, my_total_pts=my_total_pts, my_level=my_level)
 
 # ── CALENDAR ──────────────────────────────────────────────────────────────────
 
@@ -1242,7 +1297,12 @@ def members():
              .filter(User.status == 'active')
              .order_by(User.created_at.asc())
              .all())
-    return render_template('members.html', members=users)
+    # Compute total pts and level for each member
+    members_data = []
+    for u in users:
+        pts = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=u.id).scalar() or 0
+        members_data.append({'user': u, 'pts': pts, 'level': get_level(pts)})
+    return render_template('members.html', members=members_data)
 
 @app.route('/miembros/<int:user_id>/rol', methods=['POST'])
 @login_required
@@ -1334,8 +1394,10 @@ def member_activity(user_id):
         'points':   total_pts,
     }
 
+    user_level = get_level(total_pts)
     return render_template('member_activity.html',
-                           member=member, timeline=timeline, stats=stats)
+                           member=member, timeline=timeline, stats=stats,
+                           user_level=user_level, total_pts=total_pts)
 
 # ── ERROR PAGES ───────────────────────────────────────────────────────────────
 

@@ -19,16 +19,30 @@
   {% endif %}
 
   <div class="flex-1 min-w-0">
-    <h1 class="text-lg font-bold leading-tight" style="color:var(--text1)">
-      {{ member.username }}
-      {% if member.is_admin %}<span class="text-xs font-normal text-violet-500 ml-1">Admin</span>{% endif %}
-    </h1>
-    <p class="text-xs" style="color:var(--text4)">
+    <div class="flex items-center gap-2 flex-wrap mb-0.5">
+      <h1 class="text-lg font-bold leading-tight" style="color:var(--text1)">{{ member.username }}</h1>
+      {% if member.is_admin %}<span class="text-xs font-normal text-violet-500">Admin</span>{% endif %}
+      <!-- Nivel badge -->
+      <span class="text-xs font-bold px-2.5 py-0.5 rounded-full text-white"
+            style="background:{{ user_level.color }}">
+        {{ user_level.emoji }} Niv. {{ user_level.num }} · {{ user_level.name }}
+      </span>
+    </div>
+    <p class="text-xs mb-2" style="color:var(--text4)">
       Miembro desde {{ member.created_at.strftime('%d/%m/%Y') }}
-      {% if member.last_seen %}
-      · Última conexión {{ member.last_seen.strftime('%d/%m/%Y %H:%M') }}
-      {% endif %}
+      {% if member.last_seen %} · Última conexión {{ member.last_seen.strftime('%d/%m/%Y %H:%M') }}{% endif %}
     </p>
+    <!-- Barra de progreso del nivel -->
+    {% if not user_level.is_max %}
+    <div class="flex items-center gap-2">
+      <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background:var(--hover-bg)">
+        <div class="h-full rounded-full" style="width:{{ user_level.progress }}%;background:{{ user_level.color }}"></div>
+      </div>
+      <span class="text-[10px]" style="color:var(--text4)">{{ user_level.pts_to_next }} pts → Niv. {{ user_level.num + 1 }}</span>
+    </div>
+    {% else %}
+    <p class="text-[10px] font-bold" style="color:{{ user_level.color }}">🎉 Nivel máximo</p>
+    {% endif %}
   </div>
 </div>
 

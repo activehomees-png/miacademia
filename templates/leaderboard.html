@@ -5,13 +5,103 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-xl font-bold" style="color:var(--text1)">🏆 Clasificación</h1>
-  <div class="text-xs font-medium" style="color:var(--text3)">
-    Tus puntos este periodo: <span class="text-violet-600 font-bold text-sm">{{ my_pts }} pts</span>
+</div>
+
+<!-- Mi nivel (card destacada) -->
+<div class="rounded-2xl p-5 mb-6 border"
+     style="background:var(--surface);border-color:var(--border)">
+  <div class="flex items-center gap-4">
+    <!-- Avatar -->
+    <div class="relative flex-shrink-0">
+      {% if current_user.avatar_data %}
+      <img src="{{ url_for('serve_avatar', user_id=current_user.id) }}"
+           class="w-14 h-14 rounded-full object-cover"
+           style="border:3px solid {{ my_level.color }}"/>
+      {% else %}
+      <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold"
+           style="background:{{ my_level.color }}">{{ current_user.initials }}</div>
+      {% endif %}
+      <!-- Badge nivel -->
+      <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center
+                  text-[10px] font-black text-white shadow-md"
+           style="background:{{ my_level.color }}">{{ my_level.num }}</div>
+    </div>
+
+    <!-- Info -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+        <p class="font-bold text-sm" style="color:var(--text1)">{{ current_user.username }}</p>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+              style="background:{{ my_level.color }}">
+          {{ my_level.emoji }} Nivel {{ my_level.num }} · {{ my_level.name }}
+        </span>
+      </div>
+      <p class="text-xs mb-2" style="color:var(--text4)">
+        <span class="font-bold" style="color:var(--text2)">{{ my_total_pts }} pts totales</span>
+        {% if not my_level.is_max %}
+        · faltan <strong>{{ my_level.pts_to_next }}</strong> para Nivel {{ my_level.num + 1 }}
+        {% else %}
+        · ¡Nivel máximo alcanzado! 🎉
+        {% endif %}
+      </p>
+      <!-- Barra de progreso dentro del nivel -->
+      <div class="h-2 rounded-full overflow-hidden" style="background:var(--hover-bg)">
+        <div class="h-full rounded-full transition-all"
+             style="width:{{ my_level.progress }}%;background:{{ my_level.color }}"></div>
+      </div>
+    </div>
+
+    <!-- Pts del periodo -->
+    <div class="text-right flex-shrink-0">
+      <p class="text-xl font-black" style="color:#7c3aed">{{ my_pts }}</p>
+      <p class="text-[10px]" style="color:var(--text4)">pts este periodo</p>
+    </div>
   </div>
 </div>
 
+<!-- Tabla de niveles (colapsable) -->
+<details class="mb-5 rounded-xl border overflow-hidden" style="background:var(--surface);border-color:var(--border)">
+  <summary class="px-4 py-3 text-xs font-bold cursor-pointer" style="color:var(--text3)">
+    📊 Ver tabla de niveles
+  </summary>
+  <div class="grid grid-cols-2 gap-px" style="background:var(--border)">
+    {% set levels_data = [
+      (1,'Principiante','🌱',0,'#6b7280'),
+      (2,'Aprendiz','⭐',100,'#d97706'),
+      (3,'Explorador','🔥',300,'#ea580c'),
+      (4,'Comprometido','💪',700,'#2563eb'),
+      (5,'Avanzado','🚀',1500,'#7c3aed'),
+      (6,'Experto','💎',3000,'#0891b2'),
+      (7,'Élite','👑',6000,'#b45309'),
+      (8,'Maestro','⚡',10000,'#dc2626'),
+      (9,'Leyenda','🌟',18000,'#db2777'),
+      (10,'Inmortal','🏆',35000,'#111827'),
+    ] %}
+    {% for num, name, emoji, thresh, color in levels_data %}
+    <div class="flex items-center gap-3 px-4 py-2.5"
+         style="background:var(--surface);{% if my_level.num == num %}border-left:3px solid {{ color }}{% endif %}">
+      <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+           style="background:{{ color }};opacity:{% if my_level.num >= num %}1{% else %}0.35{% endif %}">{{ num }}</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold" style="color:{% if my_level.num >= num %}var(--text1){% else %}var(--text4){% endif %}">
+          {{ emoji }} {{ name }}
+        </p>
+        <p class="text-[10px]" style="color:var(--text4)">
+          {% if thresh == 0 %}Nivel inicial{% else %}{{ thresh }} pts{% endif %}
+        </p>
+      </div>
+      {% if my_level.num > num %}
+      <span class="text-[10px] text-green-500 font-bold">✓</span>
+      {% elif my_level.num == num %}
+      <span class="text-[10px] font-bold" style="color:{{ color }}">Actual</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</details>
+
 <!-- Period tabs -->
-<div class="flex gap-1 mb-6 p-1 rounded-xl" style="background:var(--hover-bg)">
+<div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--hover-bg)">
   {% for p, label in [('semanal','Semanal'),('mensual','Mensual'),('anual','Anual')] %}
   <a href="{{ url_for('leaderboard', periodo=p) }}"
      class="flex-1 text-center text-sm font-semibold py-2 rounded-lg transition"
@@ -22,7 +112,7 @@
 </div>
 
 <!-- Points legend -->
-<div class="flex gap-3 mb-5">
+<div class="flex flex-wrap gap-2 mb-5">
   {% for icon, label in [('📝','Post +4'),('📚','Lección +3'),('💬','Comentario +2'),('❤️','Reacción +1')] %}
   <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
        style="background:var(--surface);border:1px solid var(--border);color:var(--text2)">
@@ -33,36 +123,37 @@
 
 <!-- Ranking -->
 <div class="space-y-2">
-  {% for user, pts in ranking %}
+  {% for user, pts, lvl in ranking %}
   {% set pos = loop.index %}
-  <div class="flex items-center gap-4 p-4 rounded-xl border transition"
+  <div class="flex items-center gap-3 p-4 rounded-xl border transition"
        style="background:var(--surface);border-color:{% if pos==1 %}#f59e0b{% elif pos==2 %}#9ca3af{% elif pos==3 %}#b45309{% else %}var(--border){% endif %}">
 
     <!-- Position -->
-    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
-      {% if pos==1 %}bg-amber-100 text-amber-600
-      {% elif pos==2 %}bg-gray-100 text-gray-500
-      {% elif pos==3 %}bg-orange-100 text-orange-600
-      {% else %}text-xs{% endif %}"
-      style="{% if pos > 3 %}background:var(--hover-bg);color:var(--text3){% endif %}">
-      {% if pos == 1 %}🥇{% elif pos == 2 %}🥈{% elif pos == 3 %}🥉{% else %}{{ pos }}{% endif %}
+    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+         style="{% if pos==1 %}background:#fef3c7;color:#d97706{% elif pos==2 %}background:#f3f4f6;color:#6b7280{% elif pos==3 %}background:#ffedd5;color:#b45309{% else %}background:var(--hover-bg);color:var(--text3){% endif %}">
+      {% if pos == 1 %}🥇{% elif pos == 2 %}🥈{% elif pos == 3 %}🥉{% else %}<span class="text-xs">{{ pos }}</span>{% endif %}
     </div>
 
-    <!-- Avatar -->
-    {% if user.avatar_data %}
-    <img src="{{ url_for('serve_avatar', user_id=user.id) }}"
-         class="w-10 h-10 rounded-full object-cover flex-shrink-0"/>
-    {% else %}
-    <div class="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center
-                text-white text-sm font-bold flex-shrink-0">{{ user.initials }}</div>
-    {% endif %}
-
-    <!-- Name -->
-    <div class="flex-1 min-w-0">
-      <p class="font-semibold text-sm" style="color:var(--text1)">{{ user.username }}</p>
-      {% if user.is_admin %}
-      <p class="text-[10px] text-violet-500 font-semibold">Admin</p>
+    <!-- Avatar + nivel badge -->
+    <div class="relative flex-shrink-0">
+      {% if user.avatar_data %}
+      <img src="{{ url_for('serve_avatar', user_id=user.id) }}"
+           class="w-10 h-10 rounded-full object-cover"/>
+      {% else %}
+      <div class="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center
+                  text-white text-sm font-bold">{{ user.initials }}</div>
       {% endif %}
+      <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center
+                  text-[9px] font-black text-white shadow"
+           style="background:{{ lvl.color }}">{{ lvl.num }}</div>
+    </div>
+
+    <!-- Name + level -->
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-sm truncate" style="color:var(--text1)">{{ user.username }}</p>
+      <p class="text-[10px] font-semibold" style="color:{{ lvl.color }}">
+        {{ lvl.emoji }} {{ lvl.name }}
+      </p>
     </div>
 
     <!-- Points -->
