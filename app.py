@@ -101,16 +101,16 @@ def award_points(user_id, reason, ref_id, pts):
 # ── LEVEL SYSTEM ──────────────────────────────────────────────────────────────
 _LEVELS = [
     # (threshold, name, emoji, color_hex)
-    (0,      'Principiante', '🌱', '#6b7280'),
-    (100,    'Aprendiz',     '⭐', '#d97706'),
-    (300,    'Explorador',   '🔥', '#ea580c'),
-    (700,    'Comprometido', '💪', '#2563eb'),
-    (1500,   'Avanzado',     '🚀', '#7c3aed'),
-    (3000,   'Experto',      '💎', '#0891b2'),
-    (6000,   'Élite',        '👑', '#b45309'),
-    (10000,  'Maestro',      '⚡', '#dc2626'),
-    (18000,  'Leyenda',      '🌟', '#db2777'),
-    (35000,  'Inmortal',     '🏆', '#111827'),
+    (0,       'Principiante', '🌱', '#6b7280'),
+    (250,     'Aprendiz',     '⭐', '#d97706'),
+    (750,     'Explorador',   '🔥', '#ea580c'),
+    (2000,    'Comprometido', '💪', '#2563eb'),
+    (5000,    'Avanzado',     '🚀', '#7c3aed'),
+    (12000,   'Experto',      '💎', '#0891b2'),
+    (30000,   'Élite',        '👑', '#b45309'),
+    (75000,   'Maestro',      '⚡', '#dc2626'),
+    (200000,  'Leyenda',      '🌟', '#db2777'),
+    (500000,  'Inmortal',     '🏆', '#111827'),
 ]
 
 def get_level(pts):
