@@ -10,34 +10,57 @@
 
     <!-- Franja clase en directo / próxima clase -->
     {% if live_now %}
-    <a href="{{ live_now.meet_url or '#' }}" target="_blank"
-       class="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 transition hover:opacity-90"
-       style="background:linear-gradient(90deg,#dc2626,#b91c1c);color:#fff;text-decoration:none">
-      <span class="flex items-center gap-1.5 font-bold text-sm">
-        <span class="relative flex h-2.5 w-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+    <div class="live-banner rounded-xl mb-4 overflow-hidden" style="background:linear-gradient(90deg,#dc2626,#b91c1c)">
+      <a href="{{ live_now.meet_url or '#' }}" target="_blank"
+         class="flex items-center gap-3 px-4 py-3.5 transition hover:opacity-90"
+         style="color:#fff;text-decoration:none">
+        <!-- Indicador pulsante -->
+        <span class="flex items-center gap-2 font-bold text-sm flex-shrink-0">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-80"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+          </span>
+          🔴 EN DIRECTO
         </span>
-        EN DIRECTO
-      </span>
-      <span class="text-sm font-semibold">{{ live_now.title }}</span>
-      {% if live_now.meet_url %}
-      <span class="ml-auto text-xs font-bold bg-white/20 px-3 py-1 rounded-lg">🎥 Unirse →</span>
-      {% endif %}
-    </a>
+        <span class="text-sm font-semibold flex-1 truncate">{{ live_now.title }}</span>
+        {% if live_now.meet_url %}
+        <span class="flex-shrink-0 text-xs font-bold bg-white text-red-600 px-4 py-1.5 rounded-lg shadow">
+          🎥 Unirse ahora →
+        </span>
+        {% endif %}
+      </a>
+    </div>
+    <style>
+      @keyframes live-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+        50%       { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+      }
+      .live-banner { animation: live-pulse 1.8s ease-in-out infinite; }
+    </style>
+
     {% elif next_class %}
-    <a href="{{ url_for('calendar') }}"
-       class="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 transition hover:opacity-90"
-       style="background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;text-decoration:none">
-      <span class="text-sm">📅</span>
+    <div class="flex items-center gap-3 px-4 py-3.5 rounded-xl mb-4"
+         style="background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff">
+      <span class="text-base flex-shrink-0">📅</span>
       <div class="flex-1 min-w-0">
-        <span class="text-sm font-semibold">{{ next_class.title }}</span>
-        <span class="text-xs opacity-80 ml-2">
-          {{ next_class.scheduled_at.strftime('%d %b · %H:%M') }}
-        </span>
+        <p class="text-sm font-semibold truncate">{{ next_class.title }}</p>
+        <p class="text-xs opacity-75 mt-0.5">{{ next_class.scheduled_at.strftime('%d %b · %H:%M') }}</p>
       </div>
-      <span class="text-xs font-bold bg-white/20 px-3 py-1 rounded-lg flex-shrink-0">Ver →</span>
-    </a>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        {% if next_class.meet_url %}
+        <a href="{{ next_class.meet_url }}" target="_blank"
+           class="text-xs font-bold bg-white text-violet-700 px-3 py-1.5 rounded-lg shadow hover:bg-violet-50 transition"
+           style="text-decoration:none">
+          🎥 Unirse
+        </a>
+        {% endif %}
+        <a href="{{ url_for('calendar') }}"
+           class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition"
+           style="color:#fff;text-decoration:none">
+          Ver →
+        </a>
+      </div>
+    </div>
     {% endif %}
 
     <div class="flex items-center justify-between mb-4">
