@@ -18,8 +18,11 @@
       {% if s.community_image_data %}
       <img src="{{ url_for('serve_banner') }}" class="mb-2 h-28 rounded-xl object-cover w-full"/>
       {% endif %}
-      <input type="file" name="community_image_file" class="input py-1.5"
-             accept="image/jpeg,image/png,image/webp,image/gif"/>
+      <label class="file-upload" style="position:relative">
+        <input type="file" name="community_image_file" accept="image/jpeg,image/png,image/webp,image/gif"/>
+        <span class="file-upload-btn">📎 Seleccionar imagen</span>
+        <span class="file-upload-name">Ningún archivo seleccionado</span>
+      </label>
       <p class="text-[11px] text-[#a1a1aa] mt-1">JPG, PNG o WebP. Aparece como banner en el panel de comunidad.</p>
     </div>
 

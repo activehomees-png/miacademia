@@ -32,9 +32,13 @@
       <form method="POST" enctype="multipart/form-data" class="flex-1">
         <input type="hidden" name="action" value="avatar"/>
         <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Subir nueva foto (JPG, PNG — máx. 4 MB)</label>
-        <div class="flex gap-2">
-          <input type="file" name="avatar" accept="image/*" class="input py-1.5 text-sm flex-1" required/>
-          <button type="submit" class="btn btn-primary">Subir</button>
+        <div class="flex gap-2 items-center">
+          <label class="file-upload flex-1" style="position:relative">
+            <input type="file" name="avatar" accept="image/*" required/>
+            <span class="file-upload-btn">📎 Seleccionar</span>
+            <span class="file-upload-name">Ningún archivo seleccionado</span>
+          </label>
+          <button type="submit" class="btn btn-primary flex-shrink-0">Subir</button>
         </div>
       </form>
     </div>

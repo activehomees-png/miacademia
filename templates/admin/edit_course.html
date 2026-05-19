@@ -48,7 +48,11 @@
         </div>
         <p class="text-[10px] text-[#a1a1aa] mb-1">Portada por URL. Sube un archivo para reemplazarla.</p>
         {% endif %}
-        <input type="file" name="cover_image" accept="image/*" class="input text-sm py-1.5"/>
+        <label class="file-upload" style="position:relative">
+          <input type="file" name="cover_image" accept="image/*"/>
+          <span class="file-upload-btn">📎 Seleccionar imagen</span>
+          <span class="file-upload-name">Ningún archivo seleccionado</span>
+        </label>
         <p class="text-[10px] text-[#a1a1aa] mt-1">JPG, PNG o WebP. Recomendado 800×600 px.</p>
       </div>
       <div>
@@ -121,7 +125,11 @@
             <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=lesson.id) }}"
                   enctype="multipart/form-data" class="flex flex-col gap-1.5 mt-2">
               <input type="text" name="name" class="input text-xs py-1" placeholder="Nombre del archivo" required/>
-              <input type="file" name="file" class="input text-xs py-1" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3" required/>
+              <label class="file-upload" style="position:relative">
+                <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3" required/>
+                <span class="file-upload-btn">📎 Seleccionar</span>
+                <span class="file-upload-name">Ningún archivo seleccionado</span>
+              </label>
               <button type="submit" class="btn btn-primary btn-sm self-start text-xs">+ Subir archivo</button>
             </form>
           </div>

@@ -93,6 +93,18 @@
 
   ::-webkit-scrollbar { width:4px; }
   ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+  /* ── File upload custom style ── */
+  .file-upload { display:flex; align-items:center; gap:0; border:1px solid var(--border2);
+                 border-radius:8px; overflow:hidden; background:var(--input-bg); width:100%; }
+  .file-upload input[type=file] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .file-upload-btn { flex-shrink:0; background:#7c3aed; color:#fff; font-size:12px; font-weight:600;
+                     padding:8px 14px; cursor:pointer; transition:background .15s; white-space:nowrap;
+                     display:flex; align-items:center; gap:5px; }
+  .file-upload-btn:hover { background:#6d28d9; }
+  .file-upload-name { flex:1; font-size:12.5px; color:var(--text4); padding:8px 12px;
+                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-upload-name.has-file { color:var(--text2); font-weight:500; }
 </style>
 <!-- Apply saved theme before render to avoid flash -->
 <script>
@@ -307,5 +319,29 @@
 </script>
 
 {% block scripts %}{% endblock %}
+<script>
+/* Global file-upload widget handler */
+document.addEventListener('change', function(e) {
+  if (e.target.type !== 'file') return;
+  const label = e.target.closest('.file-upload');
+  if (!label) return;
+  const nameEl = label.querySelector('.file-upload-name');
+  if (!nameEl) return;
+  if (e.target.files && e.target.files.length > 0) {
+    nameEl.textContent = e.target.files[0].name;
+    nameEl.classList.add('has-file');
+  } else {
+    nameEl.textContent = 'Ningún archivo seleccionado';
+    nameEl.classList.remove('has-file');
+  }
+});
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.file-upload-btn');
+  if (!btn) return;
+  const label = btn.closest('.file-upload');
+  if (!label) return;
+  label.querySelector('input[type=file]').click();
+});
+</script>
 </body>
 </html>

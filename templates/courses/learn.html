@@ -273,8 +273,11 @@
         <form method="POST" action="{{ url_for('admin_add_lesson_file', lesson_id=current_lesson.id) }}"
               enctype="multipart/form-data" class="flex flex-col gap-2">
           <input type="text" name="name" class="input" placeholder="Nombre visible (ej: Diapositivas.pdf)" required/>
-          <input type="file" name="file" class="input py-1.5"
-                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3,.png,.jpg,.jpeg" required/>
+          <label class="file-upload" style="position:relative">
+            <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.mp3,.png,.jpg,.jpeg" required/>
+            <span class="file-upload-btn">📎 Seleccionar</span>
+            <span class="file-upload-name">Ningún archivo seleccionado</span>
+          </label>
           <button type="submit" class="btn btn-primary self-start">⬆ Subir archivo</button>
         </form>
       </div>
