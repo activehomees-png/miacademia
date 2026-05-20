@@ -553,6 +553,16 @@ def like_comment(comment_id):
 @app.route('/cursos')
 @login_required
 def courses():
+    # Auto-fix: si hay FASE 5 duplicadas, borrar la más antigua en cada carga de página
+    try:
+        fase5_list = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
+        if len(fase5_list) > 1:
+            sorted_f5 = sorted(fase5_list, key=lambda c: (len(c.sections), c.id), reverse=True)
+            for bad in sorted_f5[1:]:
+                _delete_course_safely(bad.id)
+    except Exception:
+        pass
+
     all_courses  = Course.query.filter_by(is_published=True).order_by(Course.order.asc(), Course.created_at.asc()).all()
     enrolled_ids = {e.course_id for e in current_user.enrollments}
     # Progreso por curso
@@ -3190,6 +3200,28 @@ def admin_force_descriptions():
 
 
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
+@app.route('/admin/fix-fase5-ahora')
+@login_required
+@admin_required
+def admin_fix_fase5_now():
+    """Ruta de emergencia: borra FASE 5 duplicadas usando SQL directo. Visita esta URL para forzarlo."""
+    try:
+        fase5_list = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
+        if len(fase5_list) <= 1:
+            flash(f'Solo hay {len(fase5_list)} FASE 5 en la base de datos. Nada que borrar.', 'success')
+            return redirect(url_for('courses'))
+        sorted_f5 = sorted(fase5_list, key=lambda c: (len(c.sections), c.id), reverse=True)
+        keep = sorted_f5[0]
+        deleted = []
+        for bad in sorted_f5[1:]:
+            _delete_course_safely(bad.id)
+            deleted.append(f'id={bad.id}')
+        flash(f'✅ Eliminadas FASE 5 duplicadas ({", ".join(deleted)}). Conservada id={keep.id} con {len(keep.sections)} secciones.', 'success')
+    except Exception as e:
+        flash(f'Error: {e}', 'error')
+    return redirect(url_for('courses'))
+
+
 @app.route('/admin/db-status')
 @login_required
 def admin_db_status():
