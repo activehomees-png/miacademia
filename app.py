@@ -876,26 +876,66 @@ def admin_reorder_sections():
 def admin_delete_course(course_id):
     course = Course.query.get_or_404(course_id)
     try:
-        # 1. Borrar LessonProgress y LessonImage de todas las lecciones
-        for section in course.sections:
-            for lesson in section.lessons:
-                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
-                db.session.execute(
-                    text('DELETE FROM lesson_image WHERE lesson_id = :lid'),
-                    {'lid': lesson.id}
-                )
-        db.session.flush()
-        # 2. Borrar Enrollments del curso
-        Enrollment.query.filter_by(course_id=course_id).delete()
-        db.session.flush()
-        # 3. Borrar el curso (cascade elimina sections → lessons → files)
-        db.session.delete(course)
-        db.session.commit()
+        _delete_course_safely(course_id)
         flash('Formación eliminada.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error al eliminar: {e}', 'error')
     return redirect(url_for('courses'))
+
+
+def _delete_course_safely(course_id):
+    """Borra un curso y todos sus hijos usando SQL directo (subqueries) para evitar
+    conflictos FK en PostgreSQL. Usa db.engine.begin() para una transacción limpia
+    totalmente independiente del ORM session."""
+    with db.engine.begin() as conn:
+        cid = int(course_id)
+        # Borrar lesson_progress de todas las lecciones del curso
+        conn.execute(text("""
+            DELETE FROM lesson_progress
+            WHERE lesson_id IN (
+                SELECT l.id FROM lesson l
+                JOIN section s ON s.id = l.section_id
+                WHERE s.course_id = :cid
+            )
+        """), {'cid': cid})
+
+        # Borrar lesson_image (también tiene CASCADE pero mejor explícito)
+        conn.execute(text("""
+            DELETE FROM lesson_image
+            WHERE lesson_id IN (
+                SELECT l.id FROM lesson l
+                JOIN section s ON s.id = l.section_id
+                WHERE s.course_id = :cid
+            )
+        """), {'cid': cid})
+
+        # Borrar lesson_file
+        conn.execute(text("""
+            DELETE FROM lesson_file
+            WHERE lesson_id IN (
+                SELECT l.id FROM lesson l
+                JOIN section s ON s.id = l.section_id
+                WHERE s.course_id = :cid
+            )
+        """), {'cid': cid})
+
+        # Borrar lecciones
+        conn.execute(text("""
+            DELETE FROM lesson
+            WHERE section_id IN (
+                SELECT id FROM section WHERE course_id = :cid
+            )
+        """), {'cid': cid})
+
+        # Borrar secciones
+        conn.execute(text('DELETE FROM section WHERE course_id = :cid'), {'cid': cid})
+
+        # Borrar matrículas
+        conn.execute(text('DELETE FROM enrollment WHERE course_id = :cid'), {'cid': cid})
+
+        # Borrar el curso
+        conn.execute(text('DELETE FROM course WHERE id = :cid'), {'cid': cid})
 
 @app.route('/admin/seccion/<int:section_id>/leccion', methods=['POST'])
 @login_required
@@ -923,9 +963,26 @@ def admin_add_lesson(section_id):
 def admin_delete_section(section_id):
     section = Section.query.get_or_404(section_id)
     course_id = section.course_id
-    db.session.delete(section)
-    db.session.commit()
-    flash('Sección eliminada.', 'success')
+    try:
+        sid = int(section_id)
+        with db.engine.begin() as conn:
+            conn.execute(text("""
+                DELETE FROM lesson_progress WHERE lesson_id IN
+                (SELECT id FROM lesson WHERE section_id = :sid)
+            """), {'sid': sid})
+            conn.execute(text("""
+                DELETE FROM lesson_image WHERE lesson_id IN
+                (SELECT id FROM lesson WHERE section_id = :sid)
+            """), {'sid': sid})
+            conn.execute(text("""
+                DELETE FROM lesson_file WHERE lesson_id IN
+                (SELECT id FROM lesson WHERE section_id = :sid)
+            """), {'sid': sid})
+            conn.execute(text('DELETE FROM lesson  WHERE section_id = :sid'), {'sid': sid})
+            conn.execute(text('DELETE FROM section WHERE id = :sid'),         {'sid': sid})
+        flash('Sección eliminada.', 'success')
+    except Exception as e:
+        flash(f'Error al eliminar sección: {e}', 'error')
     return redirect(url_for('admin_edit_course', course_id=course_id))
 
 @app.route('/admin/leccion/<int:lesson_id>/borrar', methods=['POST'])
@@ -934,9 +991,16 @@ def admin_delete_section(section_id):
 def admin_delete_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     course_id = lesson.section.course_id
-    db.session.delete(lesson)
-    db.session.commit()
-    flash('Lección eliminada.', 'success')
+    try:
+        lid = int(lesson_id)
+        with db.engine.begin() as conn:
+            conn.execute(text('DELETE FROM lesson_progress WHERE lesson_id = :lid'), {'lid': lid})
+            conn.execute(text('DELETE FROM lesson_image    WHERE lesson_id = :lid'), {'lid': lid})
+            conn.execute(text('DELETE FROM lesson_file     WHERE lesson_id = :lid'), {'lid': lid})
+            conn.execute(text('DELETE FROM lesson          WHERE id        = :lid'), {'lid': lid})
+        flash('Lección eliminada.', 'success')
+    except Exception as e:
+        flash(f'Error al eliminar lección: {e}', 'error')
     return redirect(url_for('admin_edit_course', course_id=course_id))
 
 @app.route('/admin/leccion/<int:lesson_id>/archivo', methods=['POST'])
@@ -1900,6 +1964,26 @@ LESSON_DESCRIPTIONS = {
 <p>Este ejercicio es fundamental, visualiza dónde quieres estar, cuáles son tus objetivos, y siéntete como si ya los hubieras conseguido.</p>
 <p>Puedes hacerte una visual board o visualizarte cuando no estés haciendo ninguna tarea intelectual. Da igual como lo hagas, pero define con todo lujo de detalles dónde quieres llegar y qué quieres hacer.</p>""",
 }
+
+
+def fix_duplicate_fase5():
+    """Delete duplicate FASE 5 MENTALIDAD courses (all except the one with most sections)."""
+    try:
+        courses = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
+        if len(courses) <= 1:
+            return  # nothing to fix
+
+        # Keep the one with the most sections; delete the rest
+        sorted_courses = sorted(courses, key=lambda c: len(c.sections), reverse=True)
+        keep = sorted_courses[0]
+        to_delete = sorted_courses[1:]
+
+        for bad in to_delete:
+            print(f'[fix_duplicate_fase5] Eliminando duplicado id={bad.id} "{bad.title}" ({len(bad.sections)} secciones)')
+            _delete_course_safely(bad.id)
+            print(f'[fix_duplicate_fase5] Eliminado ok.')
+    except Exception as e:
+        print(f'[fix_duplicate_fase5] ERROR: {e}')
 
 
 def seed_fase5():
@@ -3141,6 +3225,7 @@ with app.app_context():
     except Exception as _e:
         print(f'[migration] comment_likes: {_e}')
 
+    fix_duplicate_fase5()
     seed_fase5()
     fix_fase5_carpeta6()
     seed_bono_habitos()
