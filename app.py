@@ -1378,7 +1378,33 @@ def members():
     for u in users:
         pts = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=u.id).scalar() or 0
         members_data.append({'user': u, 'pts': pts, 'level': get_level(pts)})
-    return render_template('members.html', members=members_data)
+    # Pending registrations (only sent to template for admins to see)
+    pending = []
+    if current_user.is_admin:
+        pending = User.query.filter_by(status='pending').order_by(User.created_at.desc()).all()
+    return render_template('members.html', members=members_data, pending=pending)
+
+@app.route('/miembros/<int:user_id>/aprobar', methods=['POST'])
+@login_required
+@admin_required
+def members_approve(user_id):
+    user = User.query.get_or_404(user_id)
+    user.status = 'active'
+    notify(user.id, 'approved',
+           '✅ Tu solicitud de acceso ha sido aprobada. ¡Ya puedes entrar!', '/')
+    db.session.commit()
+    flash(f'✅ {user.username} aprobado correctamente.', 'success')
+    return redirect(url_for('members'))
+
+@app.route('/miembros/<int:user_id>/rechazar', methods=['POST'])
+@login_required
+@admin_required
+def members_reject(user_id):
+    user = User.query.get_or_404(user_id)
+    user.status = 'rejected'
+    db.session.commit()
+    flash(f'🚫 {user.username} ha sido rechazado.', 'success')
+    return redirect(url_for('members'))
 
 @app.route('/miembros/<int:user_id>/rol', methods=['POST'])
 @login_required

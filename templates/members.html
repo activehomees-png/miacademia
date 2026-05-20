@@ -4,6 +4,59 @@
 
 {% block content %}
 
+<!-- ── Solicitudes pendientes (solo admin) ─────────────────────────────── -->
+{% if current_user.is_admin and pending %}
+<div class="mb-6 rounded-2xl border overflow-hidden"
+     style="background:var(--surface);border-color:#fbbf24">
+  <div class="flex items-center gap-2 px-5 py-3 border-b" style="border-color:#fef3c7;background:#fffbeb">
+    <span class="text-base">🕐</span>
+    <h2 class="text-sm font-bold" style="color:#92400e">
+      Solicitudes de acceso pendientes
+    </h2>
+    <span class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full text-white" style="background:#f59e0b">
+      {{ pending|length }}
+    </span>
+  </div>
+  <div class="divide-y" style="--tw-divide-color:var(--border)">
+    {% for u in pending %}
+    <div class="flex items-center gap-3 px-5 py-3">
+      <!-- Avatar -->
+      <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+           style="background:#a1a1aa">
+        {% if u.avatar_data %}
+        <img src="{{ url_for('serve_avatar', user_id=u.id) }}" class="w-full h-full object-cover rounded-full"/>
+        {% else %}{{ u.initials }}{% endif %}
+      </div>
+      <!-- Info -->
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold leading-tight" style="color:var(--text1)">{{ u.username }}</p>
+        <p class="text-xs" style="color:var(--text4)">{{ u.email }}</p>
+        <p class="text-[10px]" style="color:var(--text4)">Solicitó acceso {{ u.created_at.strftime('%d/%m/%Y · %H:%M') }}</p>
+      </div>
+      <!-- Acciones -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <form method="POST" action="{{ url_for('members_approve', user_id=u.id) }}">
+          <button type="submit"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition"
+                  style="background:#059669">
+            ✓ Aprobar
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('members_reject', user_id=u.id) }}"
+              onsubmit="return confirm('¿Rechazar a {{ u.username }}?')">
+          <button type="submit"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                  style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">
+            ✕ Rechazar
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-xl font-bold" style="color:var(--text1)">👥 Miembros</h1>
