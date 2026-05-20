@@ -875,14 +875,26 @@ def admin_reorder_sections():
 @admin_required
 def admin_delete_course(course_id):
     course = Course.query.get_or_404(course_id)
-    # Delete LessonProgress first to avoid FK constraint errors
-    for section in course.sections:
-        for lesson in section.lessons:
-            LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
-    db.session.flush()
-    db.session.delete(course)
-    db.session.commit()
-    flash('Formación eliminada.', 'success')
+    try:
+        # 1. Borrar LessonProgress y LessonImage de todas las lecciones
+        for section in course.sections:
+            for lesson in section.lessons:
+                LessonProgress.query.filter_by(lesson_id=lesson.id).delete()
+                db.session.execute(
+                    text('DELETE FROM lesson_image WHERE lesson_id = :lid'),
+                    {'lid': lesson.id}
+                )
+        db.session.flush()
+        # 2. Borrar Enrollments del curso
+        Enrollment.query.filter_by(course_id=course_id).delete()
+        db.session.flush()
+        # 3. Borrar el curso (cascade elimina sections → lessons → files)
+        db.session.delete(course)
+        db.session.commit()
+        flash('Formación eliminada.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar: {e}', 'error')
     return redirect(url_for('courses'))
 
 @app.route('/admin/seccion/<int:section_id>/leccion', methods=['POST'])
