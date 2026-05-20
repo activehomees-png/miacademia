@@ -1967,21 +1967,39 @@ LESSON_DESCRIPTIONS = {
 
 
 def fix_duplicate_fase5():
-    """Delete duplicate FASE 5 MENTALIDAD courses (all except the one with most sections)."""
+    """Elimina la FASE 5 duplicada/mala de forma permanente.
+
+    Reglas:
+    - Si hay 2+ FASE 5: borra todas excepto la que tiene MÁS secciones.
+      En caso de empate, conserva la de ID más alto (más nueva = seed_fase5).
+    - Si solo hay 1 FASE 5 y tiene menos de 4 secciones: está rota/vacía → borra
+      para que seed_fase5() la recree correctamente.
+    - Si solo hay 1 con 4+ secciones: ya es la buena, no hace nada.
+    """
     try:
         courses = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
-        if len(courses) <= 1:
-            return  # nothing to fix
 
-        # Keep the one with the most sections; delete the rest
-        sorted_courses = sorted(courses, key=lambda c: len(c.sections), reverse=True)
+        if not courses:
+            return  # seed_fase5() la creará
+
+        if len(courses) == 1:
+            c = courses[0]
+            if len(c.sections) < 4:
+                print(f'[fix_duplicate_fase5] Solo hay 1 FASE 5 (id={c.id}) pero tiene {len(c.sections)} secciones (<4) → rota, eliminando.')
+                _delete_course_safely(c.id)
+                print('[fix_duplicate_fase5] Eliminada. seed_fase5() la recreará correctamente.')
+            return
+
+        # Hay 2+ → queda la que tiene MÁS secciones; en empate, la de ID más alto
+        sorted_courses = sorted(courses, key=lambda c: (len(c.sections), c.id), reverse=True)
         keep = sorted_courses[0]
         to_delete = sorted_courses[1:]
 
+        print(f'[fix_duplicate_fase5] {len(courses)} FASE 5 encontradas. Conservando id={keep.id} ({len(keep.sections)} secciones).')
         for bad in to_delete:
-            print(f'[fix_duplicate_fase5] Eliminando duplicado id={bad.id} "{bad.title}" ({len(bad.sections)} secciones)')
+            print(f'[fix_duplicate_fase5] Eliminando duplicado id={bad.id} ({len(bad.sections)} secciones)...')
             _delete_course_safely(bad.id)
-            print(f'[fix_duplicate_fase5] Eliminado ok.')
+            print(f'[fix_duplicate_fase5] Eliminado.')
     except Exception as e:
         print(f'[fix_duplicate_fase5] ERROR: {e}')
 
@@ -2957,6 +2975,38 @@ def admin_fix_liberacion_emocional():
         db.session.rollback()
         flash(f'Error: {e}', 'error')
     return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/purgar-duplicados-fase5', methods=['POST'])
+@login_required
+@admin_required
+def admin_purge_duplicate_fase5():
+    """Ruta de emergencia: elimina TODAS las FASE 5 y deja que seed_fase5 las recree
+    correctamente en el próximo arranque. Usar solo si quedan duplicadas."""
+    try:
+        courses = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
+        if not courses:
+            flash('No se encontraron cursos FASE 5.', 'error')
+            return redirect(url_for('courses'))
+
+        # Ordenar: conservar la de más secciones / mayor ID
+        sorted_courses = sorted(courses, key=lambda c: (len(c.sections), c.id), reverse=True)
+        keep = sorted_courses[0]
+        to_delete = sorted_courses[1:]
+
+        if not to_delete:
+            flash(f'Solo hay 1 FASE 5 (id={keep.id}, {len(keep.sections)} secciones). Nada que purgar.', 'success')
+            return redirect(url_for('courses'))
+
+        deleted_ids = []
+        for bad in to_delete:
+            _delete_course_safely(bad.id)
+            deleted_ids.append(bad.id)
+
+        flash(f'Duplicados eliminados: ids {deleted_ids}. Conservada la id={keep.id} con {len(keep.sections)} secciones.', 'success')
+    except Exception as e:
+        flash(f'Error al purgar: {e}', 'error')
+    return redirect(url_for('courses'))
 
 
 @app.route('/admin/fix-fase5-habitos')

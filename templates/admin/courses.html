@@ -5,7 +5,16 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-xl font-bold text-[#18181b]">📝 Gestionar formaciones</h1>
-  <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary">➕ Nueva formación</a>
+  <div class="flex items-center gap-2">
+    <form method="POST" action="{{ url_for('admin_purge_duplicate_fase5') }}"
+          onsubmit="return confirm('¿Eliminar FASE 5 duplicadas? Se conservará la que tenga más secciones.')">
+      <button type="submit" class="btn btn-sm text-xs"
+              style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">
+        🗑 Purgar FASE 5 duplicadas
+      </button>
+    </form>
+    <a href="{{ url_for('admin_new_course') }}" class="btn btn-primary">➕ Nueva formación</a>
+  </div>
 </div>
 
 {% if courses %}
