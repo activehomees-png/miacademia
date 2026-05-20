@@ -217,43 +217,61 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('community'))
+
+    errors = {}
+    form   = {}
+
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip().lower()
         pw       = request.form.get('password', '')
         bio      = request.form.get('bio', '').strip()
         avatar   = request.files.get('avatar')
-        if len(pw) < 6:
-            flash('La contraseña debe tener al menos 6 caracteres.', 'error')
-        elif not bio:
-            flash('Por favor escribe una breve descripción sobre ti.', 'error')
-        elif not avatar or not avatar.filename:
-            flash('La foto de perfil es obligatoria.', 'error')
-        elif User.query.filter_by(email=email).first():
-            flash('Ese email ya está registrado.', 'error')
+
+        # Keep values to refill the form
+        form = {'username': username, 'email': email, 'bio': bio}
+
+        # Validate all fields at once
+        if not username or len(username) < 3:
+            errors['username'] = 'El nombre debe tener al menos 3 caracteres.'
         elif User.query.filter_by(username=username).first():
-            flash('Ese nombre de usuario ya existe.', 'error')
-        else:
+            errors['username'] = 'Ese nombre de usuario ya está en uso.'
+
+        if not email or '@' not in email:
+            errors['email'] = 'Introduce un email válido.'
+        elif User.query.filter_by(email=email).first():
+            errors['email'] = 'Ese email ya está registrado.'
+
+        if not pw or len(pw) < 6:
+            errors['password'] = 'La contraseña debe tener al menos 6 caracteres.'
+
+        if not bio:
+            errors['bio'] = 'Cuéntanos algo sobre ti para que podamos aprobarte.'
+
+        if not avatar or not avatar.filename:
+            errors['avatar'] = 'La foto de perfil es obligatoria.'
+
+        if not errors:
             avatar_data = avatar.read()
             if len(avatar_data) > 4 * 1024 * 1024:
-                flash('La imagen no puede superar 4 MB.', 'error')
-                return render_template('auth/register.html')
-            user = User(username=username, email=email, bio=bio,
-                        avatar_data=avatar_data,
-                        avatar_mime=avatar.mimetype or 'image/jpeg',
-                        status='pending')
-            user.set_password(pw)
-            db.session.add(user)
-            db.session.commit()
-            # Notify all admins
-            admins = User.query.filter_by(role='admin').all()
-            for admin in admins:
-                notify(admin.id, 'new_user',
-                       f'🙋 Nueva solicitud de acceso de {username} ({email})',
-                       '/admin/usuarios')
-            db.session.commit()
-            return render_template('auth/pending.html')
-    return render_template('auth/register.html')
+                errors['avatar'] = 'La imagen no puede superar 4 MB.'
+            else:
+                user = User(username=username, email=email, bio=bio,
+                            avatar_data=avatar_data,
+                            avatar_mime=avatar.mimetype or 'image/jpeg',
+                            status='pending')
+                user.set_password(pw)
+                db.session.add(user)
+                db.session.commit()
+                admins = User.query.filter_by(role='admin').all()
+                for admin in admins:
+                    notify(admin.id, 'new_user',
+                           f'🙋 Nueva solicitud de acceso de {username} ({email})',
+                           '/miembros')
+                db.session.commit()
+                return render_template('auth/pending.html')
+
+    return render_template('auth/register.html', errors=errors, form=form)
 
 @app.route('/logout')
 @login_required

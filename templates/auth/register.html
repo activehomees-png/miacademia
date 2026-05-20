@@ -6,68 +6,116 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body{background:#f4f4f5;color:#18181b;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-  .input{background:#fff;border:1px solid #d4d4d8;border-radius:8px;padding:11px 14px;color:#18181b;font-size:14px;width:100%;outline:none;box-sizing:border-box;}
-  .input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1);}
-  textarea.input{resize:vertical;min-height:80px;}
+  .field input, .field textarea {
+    background:#fff;border:1px solid #d4d4d8;border-radius:8px;
+    padding:11px 14px;color:#18181b;font-size:14px;width:100%;
+    outline:none;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;
+  }
+  .field input:focus, .field textarea:focus {
+    border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1);
+  }
+  .field.has-error input, .field.has-error textarea {
+    border-color:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,.12);
+  }
+  textarea{resize:vertical;min-height:80px;}
+  .err-msg {
+    display:flex;align-items:center;gap:5px;
+    font-size:12px;color:#dc2626;margin-top:5px;
+    animation:slideDown .2s ease;
+  }
+  @keyframes slideDown {
+    from{opacity:0;transform:translateY(-4px)}
+    to  {opacity:1;transform:translateY(0)}
+  }
 </style>
 </head>
 <body class="p-4">
 <div class="w-full max-w-md">
+
   <div class="text-center mb-8">
     <div class="w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🎓</div>
     <h1 class="text-2xl font-bold text-[#18181b]">Marca Atractora</h1>
     <p class="text-[#71717a] text-sm mt-1">Solicita tu acceso a la comunidad</p>
   </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="mb-4 space-y-2">
-    {% for cat, msg in messages %}
-    <div class="px-4 py-3 rounded-lg text-sm border {% if cat=='error' %}bg-red-50 border-red-200 text-red-700{% else %}bg-green-50 border-green-200 text-green-700{% endif %}">
-      {{ msg }}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
-
   <div class="bg-white border border-[#e4e4e7] rounded-2xl p-8 shadow-sm">
-    <form method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form method="POST" enctype="multipart/form-data" class="space-y-4" novalidate id="reg-form">
 
-      <!-- Avatar obligatorio -->
-      <div class="flex flex-col items-center gap-3 pb-2">
-        <div id="avatar-preview" class="w-20 h-20 rounded-full bg-violet-100 flex items-center justify-center text-3xl overflow-hidden">
+      <!-- Avatar -->
+      <div class="flex flex-col items-center gap-2 pb-1 field {% if errors.avatar %}has-error{% endif %}">
+        <div id="avatar-preview"
+             class="w-20 h-20 rounded-full flex items-center justify-center text-3xl overflow-hidden transition
+                    {% if errors.avatar %}bg-red-50 ring-2 ring-red-300{% else %}bg-violet-100{% endif %}">
           📷
         </div>
-        <label class="cursor-pointer text-sm text-violet-600 hover:text-violet-700 font-medium">
+        <label class="cursor-pointer text-sm font-medium {% if errors.avatar %}text-red-500{% else %}text-violet-600 hover:text-violet-700{% endif %}">
           Subir foto de perfil *
-          <input type="file" name="avatar" accept="image/*" required class="hidden" onchange="previewAvatar(event)"/>
+          <input type="file" name="avatar" accept="image/*" class="hidden" onchange="previewAvatar(event)" id="avatar-input"/>
         </label>
         <p class="text-xs text-[#a1a1aa]">JPG o PNG · Máx. 4 MB · Obligatoria</p>
+        {% if errors.avatar %}
+        <p class="err-msg"><span>⚠</span> {{ errors.avatar }}</p>
+        {% endif %}
       </div>
 
-      <div>
+      <!-- Username -->
+      <div class="field {% if errors.username %}has-error{% endif %}">
         <label class="block text-sm font-medium text-[#52525b] mb-1.5">Nombre de usuario *</label>
-        <input type="text" name="username" class="input" placeholder="tunombre" required minlength="3"/>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Email *</label>
-        <input type="email" name="email" class="input" placeholder="tu@email.com" required/>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Contraseña *</label>
-        <input type="password" name="password" class="input" placeholder="Mínimo 6 caracteres" required minlength="6"/>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Cuéntanos sobre ti *</label>
-        <textarea name="bio" class="input" placeholder="¿Quién eres y por qué quieres unirte?" required></textarea>
+        <input type="text" name="username" placeholder="tunombre" minlength="3"
+               value="{{ form.get('username', '') }}"
+               oninput="clearErr(this, 'err-username')"/>
+        {% if errors.username %}
+        <p class="err-msg" id="err-username"><span>⚠</span> {{ errors.username }}</p>
+        {% endif %}
       </div>
 
-      <button type="submit"
+      <!-- Email -->
+      <div class="field {% if errors.email %}has-error{% endif %}">
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Email *</label>
+        <input type="email" name="email" placeholder="tu@email.com"
+               value="{{ form.get('email', '') }}"
+               oninput="clearErr(this, 'err-email')"/>
+        {% if errors.email %}
+        <p class="err-msg" id="err-email"><span>⚠</span> {{ errors.email }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="field {% if errors.password %}has-error{% endif %}">
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Contraseña *</label>
+        <div class="relative">
+          <input type="password" name="password" placeholder="Mínimo 6 caracteres" id="pw-input"
+                 oninput="clearErr(this, 'err-password'); checkPw(this.value)"/>
+          <button type="button" onclick="togglePw()" tabindex="-1"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#52525b] text-xs select-none">
+            👁
+          </button>
+        </div>
+        <!-- Barra de fortaleza -->
+        <div class="mt-1.5 h-1 rounded-full overflow-hidden bg-[#f4f4f5]">
+          <div id="pw-strength" class="h-full rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+        {% if errors.password %}
+        <p class="err-msg" id="err-password"><span>⚠</span> {{ errors.password }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Bio -->
+      <div class="field {% if errors.bio %}has-error{% endif %}">
+        <label class="block text-sm font-medium text-[#52525b] mb-1.5">Cuéntanos sobre ti *</label>
+        <textarea name="bio" placeholder="¿Quién eres y por qué quieres unirte?"
+                  oninput="clearErr(this, 'err-bio')">{{ form.get('bio', '') }}</textarea>
+        {% if errors.bio %}
+        <p class="err-msg" id="err-bio"><span>⚠</span> {{ errors.bio }}</p>
+        {% endif %}
+      </div>
+
+      <button type="submit" id="submit-btn"
         class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-lg transition text-sm mt-2">
         Enviar solicitud de acceso
       </button>
     </form>
+
     <p class="text-center text-sm text-[#71717a] mt-5">
       ¿Ya tienes cuenta?
       <a href="{{ url_for('login') }}" class="text-violet-600 hover:text-violet-700 font-semibold">Inicia sesión</a>
@@ -76,16 +124,95 @@
 </div>
 
 <script>
+/* ── Avatar preview ── */
 function previewAvatar(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const preview = document.getElementById('avatar-preview');
-    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover"/>`;
+    const p = document.getElementById('avatar-preview');
+    p.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover"/>`;
+    p.classList.remove('bg-red-50','ring-2','ring-red-300','bg-violet-100');
+    p.classList.add('bg-violet-100');
+    // remove avatar error if shown
+    const ae = p.parentElement.querySelector('.err-msg');
+    if (ae) ae.remove();
+    p.parentElement.classList.remove('has-error');
+    const lbl = p.parentElement.querySelector('label');
+    if (lbl) { lbl.classList.remove('text-red-500'); lbl.classList.add('text-violet-600'); }
   };
   reader.readAsDataURL(file);
 }
+
+/* ── Clear inline error when user starts typing ── */
+function clearErr(el, errId) {
+  const errEl = document.getElementById(errId);
+  if (errEl) errEl.remove();
+  el.closest('.field').classList.remove('has-error');
+}
+
+/* ── Password strength ── */
+function checkPw(val) {
+  const bar = document.getElementById('pw-strength');
+  if (!bar) return;
+  let score = 0;
+  if (val.length >= 6)  score += 33;
+  if (val.length >= 10) score += 22;
+  if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score += 22;
+  if (/[^A-Za-z0-9]/.test(val)) score += 23;
+  bar.style.width = score + '%';
+  bar.style.background = score < 40 ? '#f87171' : score < 70 ? '#fb923c' : '#22c55e';
+}
+
+/* ── Toggle password visibility ── */
+function togglePw() {
+  const inp = document.getElementById('pw-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+/* ── Client-side pre-validation before submit ── */
+document.getElementById('reg-form').addEventListener('submit', function(e) {
+  let ok = true;
+  const fields = [
+    { name: 'username', min: 3, msg: 'El nombre debe tener al menos 3 caracteres.' },
+    { name: 'email',    min: 5, msg: 'Introduce un email válido.' },
+    { name: 'password', min: 6, msg: 'La contraseña debe tener al menos 6 caracteres.' },
+    { name: 'bio',      min: 1, msg: 'Cuéntanos algo sobre ti.' },
+  ];
+  fields.forEach(f => {
+    const el = this.elements[f.name];
+    if (!el) return;
+    const val = el.value.trim();
+    const field = el.closest('.field');
+    const errId = 'err-' + f.name;
+    if (val.length < f.min || (f.name === 'email' && !val.includes('@'))) {
+      field.classList.add('has-error');
+      if (!document.getElementById(errId)) {
+        const p = document.createElement('p');
+        p.className = 'err-msg'; p.id = errId;
+        p.innerHTML = '<span>⚠</span> ' + f.msg;
+        field.appendChild(p);
+      }
+      if (ok) { el.focus(); ok = false; }
+    }
+  });
+  // Check avatar
+  const av = document.getElementById('avatar-input');
+  if (av && !av.files.length) {
+    const wrap = av.closest('.field');
+    wrap.classList.add('has-error');
+    const preview = document.getElementById('avatar-preview');
+    preview.classList.add('bg-red-50','ring-2','ring-red-300');
+    if (!wrap.querySelector('.err-msg')) {
+      const p = document.createElement('p');
+      p.className = 'err-msg';
+      p.innerHTML = '<span>⚠</span> La foto de perfil es obligatoria.';
+      wrap.appendChild(p);
+    }
+    ok = false;
+  }
+  if (!ok) e.preventDefault();
+});
 </script>
 </body>
 </html>
