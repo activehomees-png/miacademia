@@ -4,7 +4,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from flask import (Flask, render_template, redirect, url_for,
-                   request, flash, jsonify, abort, send_file)
+                   request, flash, jsonify, abort, send_file, make_response)
 from flask_login import (LoginManager, login_user, logout_user,
                          login_required, current_user)
 from flask_mail import Mail, Message as MailMessage
@@ -16,6 +16,7 @@ from models import (db, User, Category, Post, Comment,
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 604800  # 7 días de caché para estáticos
 
 db.init_app(app)
 mail = Mail(app)
@@ -68,13 +69,17 @@ app.jinja_env.globals['get_level']  = lambda pts: get_level(pts)  # set after ge
 def notify(user_id, type_, message, link=''):
     db.session.add(Notification(user_id=user_id, type=type_, message=message, link=link))
 
+_SKIP_PATHS = ('/avatar/', '/curso/', '/comunidad/banner', '/leccion-imagen/', '/static/')
+
 @app.before_request
 def update_last_seen():
+    # Saltar rutas de imágenes y estáticos — no necesitan actualizar last_seen
+    if request.path.startswith(_SKIP_PATHS):
+        return
     if current_user.is_authenticated:
         now = datetime.utcnow()
         if not current_user.last_seen or (now - current_user.last_seen).total_seconds() > 60:
             current_user.last_seen = now
-            # Check for classes starting in the next 24h without a reminder yet
             try:
                 window_start = now + timedelta(hours=1)
                 window_end   = now + timedelta(hours=25)
@@ -84,7 +89,7 @@ def update_last_seen():
                 ).all()
                 for lc in upcoming:
                     exists = Notification.query.filter_by(
-                        user_id=current_user.id, type='class_reminder', link=f'/calendario'
+                        user_id=current_user.id, type='class_reminder', link='/calendario'
                     ).filter(Notification.message.contains(lc.title)).first()
                     if not exists:
                         notify(current_user.id, 'class_reminder',
@@ -144,19 +149,16 @@ def get_level(pts):
     }
 
 def get_leaderboard(since=None):
-    q = PointEvent.query
+    # Una sola query GROUP BY + JOIN con User (evita N+1 y carga lazy)
+    q = (db.session.query(User, db.func.sum(PointEvent.points).label('total'))
+         .join(PointEvent, PointEvent.user_id == User.id))
     if since:
         q = q.filter(PointEvent.created_at >= since)
-    rows = q.all()
-    totals = {}
-    for e in rows:
-        totals[e.user_id] = totals.get(e.user_id, 0) + e.points
-    result = []
-    for uid, pts in sorted(totals.items(), key=lambda x: x[1], reverse=True)[:10]:
-        u = User.query.get(uid)
-        if u:
-            result.append((u, pts))
-    return result
+    rows = (q.group_by(User.id)
+             .order_by(db.text('total DESC'))
+             .limit(10)
+             .all())
+    return [(user, total or 0) for user, total in rows]
 
 def get_settings():
     s = SiteSettings.query.first()
@@ -648,15 +650,29 @@ def leaderboard():
     else:
         since = now.replace(day=1, hour=0, minute=0, second=0)
     ranking = get_leaderboard(since=since)
-    my_pts  = sum(e.points for e in PointEvent.query.filter_by(user_id=current_user.id).filter(PointEvent.created_at >= since).all())
-    # Total pts (all time) for level calculation
-    my_total_pts = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=current_user.id).scalar() or 0
-    my_level     = get_level(my_total_pts)
-    # Add level info to each ranking entry
-    ranking_with_levels = []
-    for user, pts in ranking:
-        user_total = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=user.id).scalar() or 0
-        ranking_with_levels.append((user, pts, get_level(user_total)))
+
+    # Mis puntos del periodo y totales — 2 queries simples
+    my_pts = (db.session.query(db.func.sum(PointEvent.points))
+              .filter(PointEvent.user_id == current_user.id,
+                      PointEvent.created_at >= since).scalar() or 0)
+    my_total_pts = (db.session.query(db.func.sum(PointEvent.points))
+                    .filter(PointEvent.user_id == current_user.id).scalar() or 0)
+    my_level = get_level(my_total_pts)
+
+    # Totales all-time de los usuarios en el ranking — 1 sola query GROUP BY
+    ranking_user_ids = [u.id for u, _ in ranking]
+    if ranking_user_ids:
+        total_rows = (db.session.query(PointEvent.user_id, db.func.sum(PointEvent.points))
+                      .filter(PointEvent.user_id.in_(ranking_user_ids))
+                      .group_by(PointEvent.user_id).all())
+        totals_map = {uid: (t or 0) for uid, t in total_rows}
+    else:
+        totals_map = {}
+
+    ranking_with_levels = [
+        (user, pts, get_level(totals_map.get(user.id, 0)))
+        for user, pts in ranking
+    ]
     return render_template('leaderboard.html', ranking=ranking_with_levels, period=period,
                            my_pts=my_pts, my_total_pts=my_total_pts, my_level=my_level)
 
@@ -758,25 +774,31 @@ def admin_dashboard():
     categories = Category.query.all()
     return render_template('admin/dashboard.html', stats=stats, categories=categories)
 
+def _cached_image(data, mimetype, max_age=86400):
+    """Devuelve una respuesta con cabeceras de caché para imágenes binarias."""
+    resp = make_response(send_file(io.BytesIO(data), mimetype=mimetype))
+    resp.headers['Cache-Control'] = f'public, max-age={max_age}, immutable'
+    return resp
+
 @app.route('/avatar/<int:user_id>')
 def serve_avatar(user_id):
     user = User.query.get_or_404(user_id)
     if user.avatar_data:
-        return send_file(io.BytesIO(user.avatar_data), mimetype=user.avatar_mime)
+        return _cached_image(user.avatar_data, user.avatar_mime)
     abort(404)
 
 @app.route('/curso/<int:course_id>/portada')
 def serve_course_cover(course_id):
     course = Course.query.get_or_404(course_id)
     if course.cover_data:
-        return send_file(io.BytesIO(course.cover_data), mimetype=course.cover_mime)
+        return _cached_image(course.cover_data, course.cover_mime)
     abort(404)
 
 @app.route('/comunidad/banner')
 def serve_banner():
     s = get_settings()
     if s.community_image_data:
-        return send_file(io.BytesIO(s.community_image_data), mimetype=s.community_image_mime)
+        return _cached_image(s.community_image_data, s.community_image_mime)
     abort(404)
 
 @app.route('/admin/ajustes', methods=['GET', 'POST'])
@@ -1127,7 +1149,7 @@ def admin_upload_lesson_image(lesson_id):
 @login_required
 def serve_lesson_image(image_id):
     img = LessonImage.query.get_or_404(image_id)
-    return send_file(io.BytesIO(img.data), mimetype=img.mimetype)
+    return _cached_image(img.data, img.mimetype, max_age=604800)  # 7 días
 
 
 @app.route('/admin/clases')
@@ -1401,12 +1423,15 @@ def members():
              .filter(User.status == 'active')
              .order_by(User.created_at.asc())
              .all())
-    # Compute total pts and level for each member
-    members_data = []
-    for u in users:
-        pts = db.session.query(db.func.sum(PointEvent.points)).filter_by(user_id=u.id).scalar() or 0
-        members_data.append({'user': u, 'pts': pts, 'level': get_level(pts)})
-    # Pending registrations (only sent to template for admins to see)
+    # Una sola query GROUP BY para todos los puntos (evita N+1)
+    pts_rows = (db.session.query(PointEvent.user_id, db.func.sum(PointEvent.points))
+                .group_by(PointEvent.user_id).all())
+    pts_map = {uid: (total or 0) for uid, total in pts_rows}
+
+    members_data = [
+        {'user': u, 'pts': pts_map.get(u.id, 0), 'level': get_level(pts_map.get(u.id, 0))}
+        for u in users
+    ]
     pending = []
     if current_user.is_admin:
         pending = User.query.filter_by(status='pending').order_by(User.created_at.desc()).all()
