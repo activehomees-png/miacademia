@@ -58,14 +58,4 @@
   </div>
 </div>
 
-<!-- Herramientas de mantenimiento -->
-<div class="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
-  <h2 class="text-sm font-bold text-amber-800 mb-3">🛠 Mantenimiento</h2>
-  <a href="{{ url_for('admin_recompress_images') }}"
-     onclick="return confirm('¿Recomprimir todas las imágenes de la BD? Puede tardar unos segundos.')"
-     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium transition">
-    🖼 Optimizar imágenes existentes
-  </a>
-  <p class="text-xs text-amber-700 mt-2">Recomprime avatares, portadas y banners subidos antes de la optimización automática.</p>
-</div>
 {% endblock %}
