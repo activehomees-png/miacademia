@@ -1,1 +1,1 @@
-web: gunicorn app:app --preload --workers 3 --timeout 60 --worker-class sync
+web: gunicorn app:app --workers 2 --worker-class gevent --worker-connections 100 --timeout 60 --bind 0.0.0.0:$PORT
