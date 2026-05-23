@@ -2,8 +2,18 @@
 <html lang="es" id="html-root">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>{% block title %}Academia{% endblock %}</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/static/manifest.json"/>
+<meta name="theme-color" content="#7c3aed"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Academia"/>
+<link rel="apple-touch-icon" href="/static/icon-192.png"/>
+
 <script src="/static/tailwind.js"></script>
 <style>
   /* ── Light theme (default) ── */
@@ -115,16 +125,16 @@
 <body>
 
 <!-- TOP HEADER -->
-<header class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e4e4e7] z-50 flex items-center px-5 gap-4">
+<header class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e4e4e7] z-50 flex items-center px-4 gap-3">
 
   <!-- Logo -->
-  <a href="{{ url_for('community') }}" class="flex items-center gap-2 flex-shrink-0 mr-2">
+  <a href="{{ url_for('community') }}" class="flex items-center gap-2 flex-shrink-0">
     <span class="text-xl">🎓</span>
-    <span class="font-bold text-sm" style="color:var(--text1)">{{ site.academy_name }}</span>
+    <span class="font-bold text-sm hidden sm:block" style="color:var(--text1)">{{ site.academy_name }}</span>
   </a>
 
-  <!-- Nav tabs -->
-  <nav class="flex items-end h-full gap-1 flex-1 overflow-x-auto">
+  <!-- Nav tabs — solo escritorio -->
+  <nav class="hidden md:flex items-end h-full gap-1 flex-1 overflow-x-auto">
     <a href="{{ url_for('community') }}"
        class="tab-link {% if request.endpoint in ('community','post_detail','new_post') %}active{% endif %}">
       💬 Comunidad
@@ -135,7 +145,7 @@
     </a>
     <a href="{{ url_for('calendar') }}"
        class="tab-link {% if request.endpoint=='calendar' %}active{% endif %}">
-      🎥 Clases en directo
+      🎥 Clases
     </a>
     <a href="{{ url_for('leaderboard') }}"
        class="tab-link {% if request.endpoint=='leaderboard' %}active{% endif %}">
@@ -153,14 +163,17 @@
     {% endif %}
   </nav>
 
-  <!-- User area + theme toggle -->
+  <!-- Spacer en móvil -->
+  <div class="flex-1 md:hidden"></div>
+
+  <!-- User area -->
   <div class="flex items-center gap-2 flex-shrink-0">
     <!-- Theme toggle -->
     <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
       <span id="theme-icon">☀️</span>
     </button>
 
-    <!-- Notifications bell -->
+    <!-- Notifications -->
     <div class="relative" id="notif-wrap">
       <button onclick="toggleNotifMenu()" title="Notificaciones"
               style="position:relative;width:34px;height:34px;display:flex;align-items:center;
@@ -172,8 +185,8 @@
                      background:#ef4444;color:#fff;font-size:10px;font-weight:700;
                      border-radius:50%;align-items:center;justify-content:center;">0</span>
       </button>
-      <div id="notif-menu" class="hidden absolute right-0 top-10 w-80 rounded-xl shadow-xl z-50 overflow-hidden"
-           style="background:var(--surface);border:1px solid var(--border)">
+      <div id="notif-menu" class="hidden absolute right-0 top-10 rounded-xl shadow-xl z-50 overflow-hidden"
+           style="width:min(320px,90vw);background:var(--surface);border:1px solid var(--border)">
         <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid var(--border)">
           <span class="text-sm font-bold" style="color:var(--text1)">Notificaciones</span>
           <button onclick="markAllRead()" class="text-xs text-violet-500 hover:text-violet-700">Marcar todo leído</button>
@@ -184,14 +197,13 @@
       </div>
     </div>
 
+    <!-- Avatar + menu -->
     <div class="relative" id="user-menu-wrap">
-      <button onclick="toggleUserMenu()" class="flex items-center gap-2 ml-1 cursor-pointer">
+      <button onclick="toggleUserMenu()" class="flex items-center gap-2 cursor-pointer">
         <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
           {% if current_user.avatar_data %}
           <img src="{{ url_for('serve_avatar', user_id=current_user.id) }}" class="w-full h-full object-cover"/>
-          {% else %}
-          {{ current_user.initials }}
-          {% endif %}
+          {% else %}{{ current_user.initials }}{% endif %}
         </div>
         <span class="text-sm font-medium hidden sm:block" style="color:var(--text1)">{{ current_user.username }}</span>
         <span class="text-xs hidden sm:block" style="color:var(--text4)">▾</span>
@@ -199,21 +211,57 @@
       <div id="user-menu" class="hidden absolute right-0 top-10 w-44 rounded-xl shadow-lg z-50 overflow-hidden"
            style="background:var(--surface);border:1px solid var(--border)">
         <a href="{{ url_for('account_settings') }}"
-           class="flex items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-[#f4f4f5]"
+           class="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-[#f4f4f5]"
            style="color:var(--text1)">⚙️ Mi cuenta</a>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}"
+           class="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-[#f4f4f5] md:hidden"
+           style="color:var(--text1)">⚙️ Admin</a>
+        {% endif %}
         <div style="border-top:1px solid var(--border)"></div>
         <a href="{{ url_for('logout') }}"
-           class="flex items-center gap-2 px-4 py-2.5 text-sm transition hover:bg-[#f4f4f5]"
+           class="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-[#f4f4f5]"
            style="color:var(--text3)">🚪 Cerrar sesión</a>
       </div>
     </div>
   </div>
 </header>
 
-<main class="pt-14">
+<!-- BARRA DE NAVEGACIÓN INFERIOR — solo móvil -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex border-t"
+     style="background:var(--surface);border-color:var(--border);padding-bottom:env(safe-area-inset-bottom)">
+  {% set ep = request.endpoint or '' %}
+  <a href="{{ url_for('community') }}"
+     class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-semibold transition
+            {% if ep in ('community','post_detail','new_post') %}text-violet-600{% else %}text-[#a1a1aa]{% endif %}">
+    <span class="text-xl leading-none">💬</span>Comunidad
+  </a>
+  <a href="{{ url_for('courses') }}"
+     class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-semibold transition
+            {% if 'course' in ep or ep=='learn' %}text-violet-600{% else %}text-[#a1a1aa]{% endif %}">
+    <span class="text-xl leading-none">📚</span>Cursos
+  </a>
+  <a href="{{ url_for('calendar') }}"
+     class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-semibold transition
+            {% if ep=='calendar' %}text-violet-600{% else %}text-[#a1a1aa]{% endif %}">
+    <span class="text-xl leading-none">🎥</span>Clases
+  </a>
+  <a href="{{ url_for('leaderboard') }}"
+     class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-semibold transition
+            {% if ep=='leaderboard' %}text-violet-600{% else %}text-[#a1a1aa]{% endif %}">
+    <span class="text-xl leading-none">🏆</span>Ranking
+  </a>
+  <a href="{{ url_for('members') }}"
+     class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-semibold transition
+            {% if ep=='members' %}text-violet-600{% else %}text-[#a1a1aa]{% endif %}">
+    <span class="text-xl leading-none">👥</span>Miembros
+  </a>
+</nav>
+
+<main class="pt-14 pb-safe">
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-  <div class="fixed top-16 right-4 z-[70] space-y-2 max-w-sm" id="flash-wrap">
+  <div class="fixed top-16 right-4 z-[70] space-y-2" style="max-width:min(380px,90vw)" id="flash-wrap">
     {% for cat, msg in messages %}
     <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium shadow-lg border
       {% if cat=='error' %}bg-red-50 border-red-200 text-red-700
@@ -227,7 +275,7 @@
   {% endif %}
   {% endwith %}
 
-  <div class="p-6 {% block content_class %}max-w-5xl mx-auto{% endblock %}">
+  <div class="px-4 py-5 md:p-6 {% block content_class %}max-w-5xl mx-auto{% endblock %}">
     {% block content %}{% endblock %}
   </div>
 </main>
@@ -343,6 +391,14 @@ document.addEventListener('click', function(e) {
   label.querySelector('input[type=file]').click();
 });
 </script>
-<!-- v20052026-1 -->
+<!-- v20052026-2 -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/sw.js')
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
 </body>
 </html>
