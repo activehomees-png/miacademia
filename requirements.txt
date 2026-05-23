@@ -6,3 +6,4 @@ stripe>=8.0
 gunicorn>=21.0
 psycopg2-binary>=2.9
 flask-mail>=0.10
+Pillow>=10.0

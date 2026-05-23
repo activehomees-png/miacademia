@@ -3,6 +3,12 @@ import io
 from functools import wraps
 from datetime import datetime, timedelta
 
+try:
+    from PIL import Image as PILImage
+    _PILLOW_OK = True
+except ImportError:
+    _PILLOW_OK = False
+
 from flask import (Flask, render_template, redirect, url_for,
                    request, flash, jsonify, abort, send_file, make_response)
 from flask_login import (LoginManager, login_user, logout_user,
@@ -254,13 +260,15 @@ def register():
             errors['avatar'] = 'La foto de perfil es obligatoria.'
 
         if not errors:
-            avatar_data = avatar.read()
-            if len(avatar_data) > 4 * 1024 * 1024:
+            raw_avatar = avatar.read()
+            if len(raw_avatar) > 4 * 1024 * 1024:
                 errors['avatar'] = 'La imagen no puede superar 4 MB.'
             else:
+                avatar_data, avatar_mime = _compress_image(
+                    raw_avatar, max_w=300, max_h=300, quality=82, square=True)
                 user = User(username=username, email=email, bio=bio,
                             avatar_data=avatar_data,
-                            avatar_mime=avatar.mimetype or 'image/jpeg',
+                            avatar_mime=avatar_mime,
                             status='pending')
                 user.set_password(pw)
                 db.session.add(user)
@@ -334,12 +342,12 @@ def account_settings():
         elif action == 'avatar':
             file = request.files.get('avatar')
             if file and file.filename:
-                data = file.read()
-                if len(data) > 4 * 1024 * 1024:
+                raw = file.read()
+                if len(raw) > 4 * 1024 * 1024:
                     flash('La imagen no puede superar 4 MB.', 'error')
                     return redirect(url_for('account_settings'))
-                current_user.avatar_data = data
-                current_user.avatar_mime = file.mimetype or 'image/jpeg'
+                current_user.avatar_data, current_user.avatar_mime = _compress_image(
+                    raw, max_w=300, max_h=300, quality=82, square=True)
                 db.session.commit()
                 flash('Foto de perfil actualizada.', 'success')
 
@@ -774,6 +782,40 @@ def admin_dashboard():
     categories = Category.query.all()
     return render_template('admin/dashboard.html', stats=stats, categories=categories)
 
+def _compress_image(file_storage, max_w=1200, max_h=1200, quality=82, square=False):
+    """
+    Lee un FileStorage (o bytes), redimensiona y comprime con Pillow.
+    Devuelve (bytes_comprimidos, 'image/jpeg').
+    Si Pillow no está disponible devuelve los bytes originales sin tocar.
+    """
+    raw = file_storage.read() if hasattr(file_storage, 'read') else file_storage
+    if not _PILLOW_OK:
+        return raw, 'image/jpeg'
+    try:
+        img = PILImage.open(io.BytesIO(raw))
+        # Convertir modos especiales a RGB
+        if img.mode in ('RGBA', 'P', 'LA'):
+            bg = PILImage.new('RGB', img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+            img = bg
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        if square:
+            # Recortar al cuadrado centrado
+            w, h = img.size
+            side = min(w, h)
+            left = (w - side) // 2
+            top  = (h - side) // 2
+            img  = img.crop((left, top, left + side, top + side))
+            img  = img.resize((min(side, max_w), min(side, max_w)), PILImage.LANCZOS)
+        else:
+            img.thumbnail((max_w, max_h), PILImage.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=quality, optimize=True, progressive=True)
+        return buf.getvalue(), 'image/jpeg'
+    except Exception:
+        return raw, 'image/jpeg'
+
 def _cached_image(data, mimetype, max_age=86400):
     """Devuelve una respuesta con cabeceras de caché para imágenes binarias."""
     resp = make_response(send_file(io.BytesIO(data), mimetype=mimetype))
@@ -813,9 +855,8 @@ def admin_settings():
         s.link_text             = request.form.get('link_text', '').strip()
         img = request.files.get('community_image_file')
         if img and img.filename:
-            data = img.read()
-            s.community_image_data = data
-            s.community_image_mime = img.mimetype or 'image/jpeg'
+            s.community_image_data, s.community_image_mime = _compress_image(
+                img, max_w=1200, max_h=600, quality=82)
             s.community_image      = ''
         db.session.commit()
         flash('Ajustes guardados.', 'success')
@@ -887,8 +928,8 @@ def admin_edit_course(course_id):
             course.image        = request.form.get('image_url', course.image).strip()
             cover_file = request.files.get('cover_image')
             if cover_file and cover_file.filename:
-                course.cover_data = cover_file.read()
-                course.cover_mime = cover_file.mimetype or 'image/jpeg'
+                course.cover_data, course.cover_mime = _compress_image(
+                    cover_file, max_w=800, max_h=500, quality=83)
             db.session.commit()
             flash('Curso actualizado.', 'success')
         elif action == 'add_section':
@@ -1138,8 +1179,8 @@ def admin_upload_lesson_image(lesson_id):
     f = request.files.get('file')
     if not f or not f.filename:
         return jsonify({'error': 'no file'}), 400
-    data = f.read()
-    img = LessonImage(lesson_id=lesson_id, mimetype=f.mimetype or 'image/jpeg', data=data)
+    data, mime = _compress_image(f, max_w=1400, max_h=1400, quality=82)
+    img = LessonImage(lesson_id=lesson_id, mimetype=mime, data=data)
     db.session.add(img)
     db.session.commit()
     return jsonify({'location': url_for('serve_lesson_image', image_id=img.id)})
@@ -3245,6 +3286,58 @@ def admin_fix_fase5_now():
     except Exception as e:
         flash(f'Error: {e}', 'error')
     return redirect(url_for('courses'))
+
+
+@app.route('/admin/recomprimir-imagenes')
+@login_required
+@admin_required
+def admin_recompress_images():
+    """Recomprime todas las imágenes existentes en BD con Pillow (una sola vez)."""
+    if not _PILLOW_OK:
+        flash('Pillow no está instalado. Despliega primero el nuevo requirements.txt.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    done = 0
+    saved_kb = 0
+    # Avatares
+    for user in User.query.filter(User.avatar_data != None).all():
+        old_size = len(user.avatar_data)
+        new_data, new_mime = _compress_image(user.avatar_data, max_w=300, max_h=300, quality=82, square=True)
+        if len(new_data) < old_size:
+            saved_kb += (old_size - len(new_data)) // 1024
+            user.avatar_data = new_data
+            user.avatar_mime = new_mime
+            done += 1
+    # Portadas de curso
+    for course in Course.query.filter(Course.cover_data != None).all():
+        old_size = len(course.cover_data)
+        new_data, new_mime = _compress_image(course.cover_data, max_w=800, max_h=500, quality=83)
+        if len(new_data) < old_size:
+            saved_kb += (old_size - len(new_data)) // 1024
+            course.cover_data = new_data
+            course.cover_mime = new_mime
+            done += 1
+    # Banner comunidad
+    s = get_settings()
+    if s.community_image_data:
+        old_size = len(s.community_image_data)
+        new_data, new_mime = _compress_image(s.community_image_data, max_w=1200, max_h=600, quality=82)
+        if len(new_data) < old_size:
+            saved_kb += (old_size - len(new_data)) // 1024
+            s.community_image_data = new_data
+            s.community_image_mime = new_mime
+            done += 1
+    # Imágenes de lección
+    for li in LessonImage.query.all():
+        old_size = len(li.data)
+        new_data, new_mime = _compress_image(li.data, max_w=1400, max_h=1400, quality=82)
+        if len(new_data) < old_size:
+            saved_kb += (old_size - len(new_data)) // 1024
+            li.data = new_data
+            li.mimetype = new_mime
+            done += 1
+    db.session.commit()
+    flash(f'✅ {done} imágenes recomprimidas. Espacio liberado: ~{saved_kb} KB.', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/admin/db-status')
