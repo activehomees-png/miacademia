@@ -92,8 +92,8 @@ def update_last_seen():
         if not current_user.last_seen or (now - current_user.last_seen).total_seconds() > 60:
             current_user.last_seen = now
             try:
-                window_start = now + timedelta(hours=1)
-                window_end   = now + timedelta(hours=25)
+                window_start = now
+                window_end   = now + timedelta(hours=24)
                 upcoming = LiveClass.query.filter(
                     LiveClass.scheduled_at >= window_start,
                     LiveClass.scheduled_at <= window_end
@@ -568,16 +568,6 @@ def like_comment(comment_id):
 @app.route('/cursos')
 @login_required
 def courses():
-    # Auto-fix: si hay FASE 5 duplicadas, borrar la más antigua en cada carga de página
-    try:
-        fase5_list = Course.query.filter(Course.title.ilike('%FASE 5%')).all()
-        if len(fase5_list) > 1:
-            sorted_f5 = sorted(fase5_list, key=lambda c: (len(c.sections), c.id), reverse=True)
-            for bad in sorted_f5[1:]:
-                _delete_course_safely(bad.id)
-    except Exception:
-        pass
-
     all_courses  = Course.query.filter_by(is_published=True).order_by(Course.order.asc(), Course.created_at.asc()).all()
     enrolled_ids = {e.course_id for e in current_user.enrollments}
     # Progreso por curso
@@ -764,12 +754,39 @@ def checkout(course_id):
 def checkout_success():
     course_id  = request.args.get('course_id', type=int)
     session_id = request.args.get('session_id', '')
-    if course_id and not current_user.is_enrolled(course_id):
+    if not course_id or not session_id:
+        flash('Enlace de pago no válido.', 'error')
+        return redirect(url_for('courses'))
+
+    # Verificar con Stripe que el pago fue completado realmente
+    stripe_key = app.config.get('STRIPE_SECRET_KEY', '')
+    payment_ok = False
+    if stripe_key and session_id.startswith('cs_'):
+        try:
+            import stripe
+            stripe.api_key = stripe_key
+            s = stripe.checkout.Session.retrieve(session_id)
+            payment_ok = (s.payment_status == 'paid' and
+                          s.metadata.get('course_id') == str(course_id) or
+                          # Fallback: verificar que el session pertenece al usuario actual
+                          s.client_reference_id == str(current_user.id) or
+                          s.payment_status == 'paid')
+        except Exception:
+            payment_ok = False
+    else:
+        # Sin Stripe configurado — no inscribir automáticamente
+        payment_ok = False
+
+    if payment_ok and not current_user.is_enrolled(course_id):
         db.session.add(Enrollment(user_id=current_user.id,
                                   course_id=course_id,
                                   stripe_session_id=session_id))
         db.session.commit()
-    flash('¡Pago completado! Ya tienes acceso al curso.', 'success')
+        flash('¡Pago completado! Ya tienes acceso al curso.', 'success')
+    elif current_user.is_enrolled(course_id):
+        flash('Ya estás inscrito en este curso.', 'success')
+    else:
+        flash('No se pudo verificar el pago. Contacta con el administrador.', 'error')
     return redirect(url_for('learn', course_id=course_id))
 
 # ── ADMIN ─────────────────────────────────────────────────────────────────────
@@ -1149,11 +1166,14 @@ def admin_delete_lesson_file(file_id):
 @admin_required
 def admin_save_lesson_description(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
-    lesson.description = request.form.get('description', '')
+    desc = request.form.get('description', '').strip()
+    # Limpiar contenido vacío que deja el editor Quill
+    if desc in ('<p><br></p>', '<p></p>', '<br>'):
+        desc = ''
+    lesson.description = desc
     db.session.commit()
-    flash('Descripción guardada.', 'success')
-    return redirect(url_for('learn', course_id=lesson.section.course_id,
-                            leccion=lesson_id))
+    # Llamado siempre por AJAX — devolver 204 (no content)
+    return ('', 204)
 
 
 @app.route('/admin/leccion/<int:lesson_id>/video', methods=['POST'])
@@ -1609,6 +1629,14 @@ def forbidden(e):
 @app.errorhandler(404)
 def not_found(e):
     return render_template('errors/404.html'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    db.session.rollback()   # evitar que una sesión rota bloquee futuros requests
+    try:
+        return render_template('errors/500.html'), 500
+    except Exception:
+        return '<h1>Error interno del servidor</h1><p>Inténtalo de nuevo en unos segundos.</p>', 500
 
 
 # ── INIT ──────────────────────────────────────────────────────────────────────
@@ -3622,21 +3650,43 @@ with app.app_context():
     seed_clases_2025()
     seed_coach_profesional()
 
-    # Backfill points for existing lesson completions and comments
+    # Backfill points — solo si faltan registros (compara conteos, evita N+1 en cada arranque)
     try:
-        for lp in LessonProgress.query.all():
-            if not PointEvent.query.filter_by(user_id=lp.user_id, reason='lesson', ref_id=lp.lesson_id).first():
-                db.session.add(PointEvent(user_id=lp.user_id, points=3, reason='lesson', ref_id=lp.lesson_id, created_at=lp.completed_at))
-        for c in Comment.query.all():
-            if not PointEvent.query.filter_by(user_id=c.user_id, reason='comment', ref_id=c.id).first():
-                db.session.add(PointEvent(user_id=c.user_id, points=2, reason='comment', ref_id=c.id, created_at=c.created_at))
-        for p in Post.query.all():
-            if not PointEvent.query.filter_by(user_id=p.user_id, reason='post', ref_id=p.id).first():
-                db.session.add(PointEvent(user_id=p.user_id, points=4, reason='post', ref_id=p.id, created_at=p.created_at))
-        db.session.commit()
+        lp_count = LessonProgress.query.count()
+        pt_lesson = PointEvent.query.filter_by(reason='lesson').count()
+        if lp_count > 0 and pt_lesson < lp_count:
+            # Usar INSERT ... WHERE NOT EXISTS para ser eficiente
+            with db.engine.begin() as _c:
+                _c.execute(text("""
+                    INSERT INTO point_event (user_id, points, reason, ref_id, created_at)
+                    SELECT lp.user_id, 3, 'lesson', lp.lesson_id, lp.completed_at
+                    FROM lesson_progress lp
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM point_event pe
+                        WHERE pe.user_id = lp.user_id AND pe.reason = 'lesson' AND pe.ref_id = lp.lesson_id
+                    )
+                """))
+                _c.execute(text("""
+                    INSERT INTO point_event (user_id, points, reason, ref_id, created_at)
+                    SELECT c.user_id, 2, 'comment', c.id, c.created_at
+                    FROM comment c
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM point_event pe
+                        WHERE pe.user_id = c.user_id AND pe.reason = 'comment' AND pe.ref_id = c.id
+                    )
+                """))
+                _c.execute(text("""
+                    INSERT INTO point_event (user_id, points, reason, ref_id, created_at)
+                    SELECT p.user_id, 4, 'post', p.id, p.created_at
+                    FROM post p
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM point_event pe
+                        WHERE pe.user_id = p.user_id AND pe.reason = 'post' AND pe.ref_id = p.id
+                    )
+                """))
+            print('[backfill] Puntos completados correctamente.')
     except Exception as e:
         print(f'[seed] ERROR en backfill points: {e}')
-        db.session.rollback()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))

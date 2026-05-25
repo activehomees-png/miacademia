@@ -190,19 +190,25 @@
       </div>
 
       <!-- Description VIEW -->
-      <div id="desc-view" class="p-5 {% if current_lesson.description %}border-b border-[#f4f4f5]{% endif %} lesson-description">
-        {% if current_lesson.description %}
-          {% if '<' in current_lesson.description %}
-            {{ current_lesson.description | safe }}
+      {% set _desc = current_lesson.description or '' %}
+      {% set _has_desc = _desc and _desc not in ('<p><br></p>', '<p></p>', '<br>') %}
+      {% if _has_desc or current_user.is_admin %}
+      <div id="desc-view" class="p-5 {% if _has_desc %}border-b border-[#f4f4f5]{% endif %} lesson-description">
+        {% if _has_desc %}
+          {% if '<' in _desc %}
+            {{ _desc | safe }}
           {% else %}
-            {% for para in current_lesson.description.split('\n\n') %}
-              {% if para.strip() %}<p>{{ para.strip() | replace('\n', ' ') }}</p>{% endif %}
+            {% for para in _desc.split('\n\n') %}
+              {% if para.strip() %}<p>{{ para.strip() }}</p>{% endif %}
             {% endfor %}
           {% endif %}
-        {% elif current_user.is_admin %}
+        {% else %}
           <p class="text-[#a1a1aa] text-sm italic">Sin descripción — haz clic en ✏️ para añadir contenido.</p>
         {% endif %}
       </div>
+      {% else %}
+      <div id="desc-view" class="hidden lesson-description"></div>
+      {% endif %}
 
       <!-- Description EDIT (inline, hidden by default) — admin only -->
       {% if current_user.is_admin %}
