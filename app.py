@@ -3275,13 +3275,89 @@ def admin_force_descriptions():
 @login_required
 @admin_required
 def admin_importar_descripciones():
-    """Lee skool_export.json y actualiza descriptions + video_url en las lecciones."""
-    import unicodedata, re as _re, json as _json
+    """Lee skool_export.json y actualiza descriptions en las lecciones con formato HTML."""
+    import unicodedata, re as _re, json as _json, html as _html
+
     skool_path = os.path.join(os.path.dirname(__file__), 'skool_export.json')
     if not os.path.exists(skool_path):
         flash('No se encuentra skool_export.json', 'error')
         return redirect(url_for('admin_dashboard'))
 
+    # ── Conversor texto plano → HTML ──────────────────────────────────────────
+    # Tabla de caracteres unicode matemáticos en negrita → ASCII normal
+    _BOLD_OFFSET = [(0x1D400, 0x1D419, 'A'), (0x1D41A, 0x1D433, 'a'),
+                    (0x1D4D0, 0x1D4E9, 'A'), (0x1D4EA, 0x1D503, 'a'),
+                    (0x1D5D4, 0x1D5ED, 'A'), (0x1D5EE, 0x1D607, 'a'),
+                    (0x1D608, 0x1D621, 'A'), (0x1D622, 0x1D63B, 'a'),
+                    (0x1D56C, 0x1D585, 'A'), (0x1D586, 0x1D59F, 'a')]
+
+    def _demath(text):
+        """Convierte letras unicode matemáticas en negrita a ASCII."""
+        result = []
+        for ch in text:
+            cp = ord(ch)
+            replaced = False
+            for start, end, base in _BOLD_OFFSET:
+                if start <= cp <= end:
+                    result.append(chr(ord(base) + cp - start))
+                    replaced = True
+                    break
+            if not replaced:
+                result.append(ch)
+        return ''.join(result)
+
+    def texto_a_html(texto):
+        if not texto:
+            return ''
+        # Limpiar caracteres invisibles
+        texto = texto.replace('​', '').replace('‌', '').replace('‍', '')
+        texto = texto.replace('\xa0', ' ').replace('﻿', '')
+        # Convertir matemáticas unicode en negrita a HTML <strong>
+        texto = _demath(texto)
+        # Escapar HTML
+        texto = _html.escape(texto)
+        # Restaurar URLs como links clickables (después del escape)
+        texto = _re.sub(
+            r'(https?://[^\s&<>"\']+)',
+            r'<a href="\1" target="_blank" rel="noopener">\1</a>',
+            texto
+        )
+        # Dividir en bloques por líneas en blanco
+        bloques = _re.split(r'\n{2,}', texto.strip())
+        html_parts = []
+        for bloque in bloques:
+            lineas = [l.strip() for l in bloque.split('\n') if l.strip()]
+            if not lineas:
+                continue
+            # Detectar lista numerada (1. / 1) / 1- al inicio)
+            is_numbered = all(_re.match(r'^\d+[\.\)\-]', l) for l in lineas) and len(lineas) > 1
+            # Detectar lista de viñetas (• - * al inicio)
+            is_bullet = all(_re.match(r'^[•\-\*]\s', l) for l in lineas) and len(lineas) > 1
+            if is_numbered:
+                items = [_re.sub(r'^\d+[\.\)\-]\s*', '', l) for l in lineas]
+                html_parts.append('<ol>' + ''.join(f'<li>{i}</li>' for i in items) + '</ol>')
+            elif is_bullet:
+                items = [_re.sub(r'^[•\-\*]\s*', '', l) for l in lineas]
+                html_parts.append('<ul>' + ''.join(f'<li>{i}</li>' for i in items) + '</ul>')
+            elif len(lineas) == 1:
+                # Una sola línea — párrafo o encabezado si es corta y en mayúsculas
+                l = lineas[0]
+                if len(l) < 80 and (l.isupper() or l.endswith(':')) and not l.startswith('<a'):
+                    html_parts.append(f'<h3>{l}</h3>')
+                else:
+                    html_parts.append(f'<p>{l}</p>')
+            else:
+                # Varias líneas — primera puede ser título si es corta
+                first = lineas[0]
+                rest = lineas[1:]
+                if len(first) < 80 and first.endswith(':') and not first.startswith('<a'):
+                    html_parts.append(f'<h3>{first}</h3>')
+                    html_parts.append('<p>' + '<br>'.join(rest) + '</p>')
+                else:
+                    html_parts.append('<p>' + '<br>'.join(lineas) + '</p>')
+        return '\n'.join(html_parts)
+
+    # ── Normalizar títulos para matching ─────────────────────────────────────
     def normalizar(t):
         t = t.lower().strip()
         t = _re.sub(r'^[\d\.\[\]]+\s*', '', t)
@@ -3299,7 +3375,7 @@ def admin_importar_descripciones():
         for sec in curso['sections']:
             for les in sec['lessons']:
                 key = normalizar(les['title'])
-                if key and (les.get('description') or les.get('videoLink')):
+                if key and les.get('description'):
                     skool_map[key] = les
 
     # Cruzar con lecciones de la academia
@@ -3313,7 +3389,7 @@ def admin_importar_descripciones():
         if skool:
             changed = False
             if skool.get('description') and not lesson.description:
-                lesson.description = skool['description']
+                lesson.description = texto_a_html(skool['description'])
                 changed = True
             if changed:
                 updated += 1
