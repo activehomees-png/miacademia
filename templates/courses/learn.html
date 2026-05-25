@@ -190,8 +190,18 @@
       </div>
 
       <!-- Description VIEW -->
-      <div id="desc-view" class="{% if current_lesson.description %}p-5 border-b border-[#f4f4f5]{% endif %} lesson-description">
-        {{ current_lesson.description | safe }}
+      <div id="desc-view" class="p-5 {% if current_lesson.description %}border-b border-[#f4f4f5]{% endif %} lesson-description">
+        {% if current_lesson.description %}
+          {% if '<' in current_lesson.description %}
+            {{ current_lesson.description | safe }}
+          {% else %}
+            {% for para in current_lesson.description.split('\n\n') %}
+              {% if para.strip() %}<p>{{ para.strip() | replace('\n', ' ') }}</p>{% endif %}
+            {% endfor %}
+          {% endif %}
+        {% elif current_user.is_admin %}
+          <p class="text-[#a1a1aa] text-sm italic">Sin descripción — haz clic en ✏️ para añadir contenido.</p>
+        {% endif %}
       </div>
 
       <!-- Description EDIT (inline, hidden by default) — admin only -->
@@ -462,8 +472,8 @@ async function saveEdit() {
     view.innerHTML = html;
     view.className = 'p-5 border-b border-[#f4f4f5] lesson-description';
   } else {
-    view.innerHTML = '';
-    view.className = 'lesson-description';
+    view.innerHTML = '<p class="text-[#a1a1aa] text-sm italic">Sin descripción — haz clic en ✏️ para añadir contenido.</p>';
+    view.className = 'p-5 lesson-description';
   }
   cancelEdit();
   showToast('💾 Guardando…');
