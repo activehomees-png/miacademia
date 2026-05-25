@@ -3270,6 +3270,69 @@ def admin_force_descriptions():
 </body></html>'''
 
 
+# ── Importar descripciones desde Skool ───────────────────────────────────────
+@app.route('/admin/importar-descripciones-skool')
+@login_required
+@admin_required
+def admin_importar_descripciones():
+    """Lee skool_export.json y actualiza descriptions + video_url en las lecciones."""
+    import unicodedata, re as _re, json as _json
+    skool_path = os.path.join(os.path.dirname(__file__), 'skool_export.json')
+    if not os.path.exists(skool_path):
+        flash('No se encuentra skool_export.json', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    def normalizar(t):
+        t = t.lower().strip()
+        t = _re.sub(r'^[\d\.\[\]]+\s*', '', t)
+        t = unicodedata.normalize('NFD', t)
+        t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
+        t = _re.sub(r'[^a-z0-9 ]', '', t)
+        return t.strip()
+
+    with open(skool_path, encoding='utf-8') as f:
+        skool_data = _json.load(f)
+
+    # Construir mapa normalizado → datos
+    skool_map = {}
+    for curso in skool_data:
+        for sec in curso['sections']:
+            for les in sec['lessons']:
+                key = normalizar(les['title'])
+                if key and (les.get('description') or les.get('videoLink')):
+                    skool_map[key] = les
+
+    # Cruzar con lecciones de la academia
+    lessons = Lesson.query.all()
+    updated = 0
+    no_match = []
+
+    for lesson in lessons:
+        key = normalizar(lesson.title)
+        skool = skool_map.get(key)
+        if skool:
+            changed = False
+            if skool.get('description') and not lesson.description:
+                lesson.description = skool['description']
+                changed = True
+            if skool.get('videoLink') and not lesson.video_url:
+                lesson.video_url = skool['videoLink']
+                changed = True
+            if changed:
+                updated += 1
+        else:
+            no_match.append(lesson.title)
+
+    db.session.commit()
+    msg = f'✅ {updated} lecciones actualizadas.'
+    if no_match:
+        msg += f' Sin coincidencia ({len(no_match)}): ' + ', '.join(no_match[:5])
+        if len(no_match) > 5:
+            msg += f'... y {len(no_match)-5} más'
+    flash(msg, 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
 # ── Ruta diagnóstico de base de datos (solo admin) ────────────────────────────
 @app.route('/admin/fix-fase5-ahora')
 @login_required

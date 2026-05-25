@@ -58,4 +58,14 @@
   </div>
 </div>
 
+<!-- Importar desde Skool -->
+<div class="mt-6 bg-violet-50 border border-violet-200 rounded-xl p-5">
+  <h2 class="text-sm font-bold text-violet-800 mb-2">📥 Importar desde Skool</h2>
+  <a href="{{ url_for('admin_importar_descripciones') }}"
+     onclick="return confirm('¿Importar descripciones y vídeos desde Skool? Solo actualiza lecciones vacías.')"
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition">
+    📋 Importar descripciones y vídeos de Skool
+  </a>
+  <p class="text-xs text-violet-600 mt-2">Solo rellena las lecciones que están vacías, no sobreescribe lo que ya tienes.</p>
+</div>
 {% endblock %}
