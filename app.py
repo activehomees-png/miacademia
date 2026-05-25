@@ -3315,9 +3315,6 @@ def admin_importar_descripciones():
             if skool.get('description') and not lesson.description:
                 lesson.description = skool['description']
                 changed = True
-            if skool.get('videoLink') and not lesson.video_url:
-                lesson.video_url = skool['videoLink']
-                changed = True
             if changed:
                 updated += 1
         else:
