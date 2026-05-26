@@ -23,11 +23,14 @@ from models import (db, User, Category, Post, Comment,
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 604800  # 7 días de caché para estáticos
-# Pool de BD: aguanta 100 conexiones simultáneas (gevent)
-app.config.setdefault('SQLALCHEMY_POOL_SIZE', 10)
-app.config.setdefault('SQLALCHEMY_MAX_OVERFLOW', 20)
-app.config.setdefault('SQLALCHEMY_POOL_RECYCLE', 300)  # reconectar cada 5 min
-app.config.setdefault('SQLALCHEMY_POOL_PRE_PING', True)  # detectar conexiones muertas
+# Pool BD conservador: 3 workers × 3 pool = 9 conexiones máx (Railway free tier = 10 conn limit)
+app.config.setdefault('SQLALCHEMY_POOL_SIZE', 3)
+app.config.setdefault('SQLALCHEMY_MAX_OVERFLOW', 2)
+app.config.setdefault('SQLALCHEMY_POOL_RECYCLE', 280)
+app.config.setdefault('SQLALCHEMY_POOL_PRE_PING', True)
+app.config.setdefault('SQLALCHEMY_ENGINE_OPTIONS', {
+    'pool_size': 3, 'max_overflow': 2, 'pool_recycle': 280, 'pool_pre_ping': True
+})
 
 db.init_app(app)
 mail = Mail(app)
